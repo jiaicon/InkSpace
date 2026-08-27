@@ -614,7 +614,7 @@ git commit -m "feat(editor): editor component wiring dual engines"
 
 ---
 
-### Task 6: 增强插件——数学(KaTeX)、Mermaid、代码块高亮
+### Task 6: 增强插件——数学(KaTeX)、Mermaid、代码块渲染
 
 **Files:**
 - Modify: `src/renderer/src/editor/milkdownEditor.ts`
@@ -625,8 +625,7 @@ git commit -m "feat(editor): editor component wiring dual engines"
 
 - [ ] **Step 1: 安装依赖**
 
-Run: `pnpm add katex remark-math mermaid prismjs`
-Run: `pnpm add -D @types/prismjs`
+Run: `pnpm add katex remark-math mermaid`
 
 - [ ] **Step 2: 在 `milkdownEditor.ts` 引入并启用插件**
 
@@ -655,13 +654,13 @@ Expected: 无错误（若 `@milkdown/kit/plugin/math` 等子路径不存在，�
 - [ ] **Step 4: 验证渲染**
 
 Run: `pnpm dev`
-Expected: 编辑器可渲染数学公式（`$x^2$`）、Mermaid 图（` ```mermaid ` 围栏）与代码块高亮；无控制台报错。
+Expected: 编辑器可渲染数学公式（`$x^2$`）、Mermaid 图（` ```mermaid ` 围栏）与代码块（带语言标注、等宽字体）；无控制台报错。
 
 - [ ] **Step 5: 提交**
 
 ```bash
 git add src/renderer/src/editor/milkdownEditor.ts package.json pnpm-lock.yaml
-git commit -m "feat(editor): math, mermaid and code-block highlighting"
+git commit -m "feat(editor): math, mermaid and code-block rendering"
 ```
 
 ---
@@ -768,7 +767,7 @@ git commit -m "feat(editor): mount editor in app for acceptance"
 | WYSIWYG（Milkdown，GFM） | Task 3 |
 | 源码模式（CodeMirror） | Task 4 |
 | 模式切换内容一致 | Task 5 / 7 |
-| 数学(KaTeX)/Mermaid/代码块高亮 | Task 6 |
+| 数学(KaTeX)/Mermaid/代码块渲染 | Task 6 |
 | TOC 标题→大纲 | Task 2 / 5 |
 | 引擎初始化失败兜底 + 序列化失败兜底 | Task 5（error 态）/ Task 1（applyEdit no-op 兜底） |
 | 接口契约单测 + 大纲解析单测 | Task 1 / 2 |
