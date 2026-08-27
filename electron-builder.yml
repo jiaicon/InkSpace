@@ -1,0 +1,18 @@
+appId: com.jiaicon.electronapp
+productName: ElectronApp
+directories:
+  output: release
+files:
+  - out/**
+asarUnpack:
+  - node_modules/better-sqlite3/**
+win:
+  target: [nsis]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target: [dmg]
+linux:
+  target: [AppImage]
+npmRebuild: true
