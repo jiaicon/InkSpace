@@ -27,9 +27,13 @@
     "better-sqlite3": "^12.11.1",
     "dayjs": "^1.11.13",
     "electron-log": "^5.2.0",
+    "mdast-util-to-string": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "unist-util-visit": "^5.1.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
