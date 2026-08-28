@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
+    "@milkdown/kit": "^7.22.1",
     "antd": "^5.20.0",
     "better-sqlite3": "^12.11.1",
     "dayjs": "^1.11.13",
