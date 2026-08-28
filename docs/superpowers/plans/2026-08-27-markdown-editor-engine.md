@@ -616,6 +616,10 @@ git commit -m "feat(editor): editor component wiring dual engines"
 
 ### Task 6: 增强插件——数学(KaTeX)、Mermaid、代码块渲染
 
+> ⚠️ **已推迟（pre-flight 修正）**：`@milkdown/plugin-math`（最新 7.5.9）与 `@milkdown/plugin-diagram`（最新 7.7.0）均停留在旧版本，与 `@milkdown/kit@7.22.1` 不兼容（Milkdown 要求所有插件同版本；ctx/prose 内部 API 在 7.7→7.22 间已不兼容）；`@milkdown/plugin-code-block` 不存在（404）。强行安装旧版插件会引入重复的 `@milkdown/core` 并导致运行时 ctx 注入不匹配。
+>
+> 因此：代码块渲染已由 Task 3 的 `commonmark`+`gfm` 覆盖（fenced code block + 语言标注 + 等宽字体）；数学(KaTeX)与 Mermaid 推迟到后续迭代（待 Milkdown 发布兼容插件，或改用「源码模式 + 预览面板」方案）。
+
 **Files:**
 - Modify: `src/renderer/src/editor/milkdownEditor.ts`
 
