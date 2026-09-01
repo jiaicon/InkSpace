@@ -84,7 +84,7 @@ export interface FileTreeNode {
 export interface RecentFile {
   path: string
   title: string
-  lastOpenedAt: string
+  lastOpenedAt: number   // epoch 毫秒
 }
 
 export interface WorkspaceInfo {
@@ -132,8 +132,7 @@ buildFileTree(root: string, opts?: { maxDepth?: number }): Promise<FileTreeNode[
 // modules/file/service.ts
 interface FileService {
   read(path: string): Promise<string>
-  write(path: string, content: string): Promise<void>
-  create(path: string, content: string): Promise<void>  // 已由 IPC 层确定 path
+  write(path: string, content: string): Promise<void>   // 自动建父目录；新建/另存均复用
   rename(path: string, newName: string): Promise<string>
   remove(path: string): Promise<void>                    // 永久删除（IPC 层先尝试 trash）
 }
@@ -153,13 +152,13 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS recent_files (
   path           TEXT PRIMARY KEY,
   title          TEXT NOT NULL,
-  last_opened_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  last_opened_at INTEGER NOT NULL
 );
 ```
 
 - `settings` 目前仅存 `lastWorkspace`；预留 `theme` 等 KV。
-- `recent_files` 以 `path` 为主键（同文件重复打开只更新时间）；`last_opened_at` 用 `datetime('now','localtime')`
-  在 `addRecent` 时显式更新。
+- `recent_files` 以 `path` 为主键（同文件重复打开只更新时间）；`last_opened_at` 为 epoch 毫秒整数，由
+  service 用 `Date.now()` 显式写入，保证「最近打开」排序精确无歧义。
 
 迁移执行：在 `src/main/db/migrate.ts` 的 `migrations` 数组追加 `002_files.sql`（沿用版本化 SQL + `_migrations` 幂等）。
 
