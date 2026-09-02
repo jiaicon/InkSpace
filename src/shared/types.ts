@@ -37,3 +37,24 @@ export interface IpcResult<T> {
   data?: T
   error?: string
 }
+
+/** 文件树节点（file 为叶，directory 有 children） */
+export interface FileTreeNode {
+  name: string
+  path: string
+  type: 'file' | 'directory'
+  children?: FileTreeNode[]
+}
+
+/** 最近打开的一条记录 */
+export interface RecentFile {
+  path: string
+  title: string
+  lastOpenedAt: number   // epoch 毫秒
+}
+
+/** 工作区信息：根路径 + 文件树 */
+export interface WorkspaceInfo {
+  path: string
+  tree: FileTreeNode[]
+}

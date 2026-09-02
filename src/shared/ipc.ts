@@ -6,5 +6,19 @@ export const IPC = {
   userUpdate: 'user:update',
   userDelete: 'user:delete',
   // system 模块
-  systemInfo: 'system:info'
+  systemInfo: 'system:info',
+  // workspace 模块
+  workspacePick: 'workspace:pick',
+  workspaceLast: 'workspace:last',
+  workspaceTree: 'workspace:tree',
+  recentList: 'recent:list',
+  recentAdd: 'recent:add',
+  recentRemove: 'recent:remove',
+  // file 模块
+  fileRead: 'file:read',
+  fileWrite: 'file:write',
+  fileCreate: 'file:create',
+  fileRename: 'file:rename',
+  fileDelete: 'file:delete',
+  fileReveal: 'file:reveal'
 } as const
