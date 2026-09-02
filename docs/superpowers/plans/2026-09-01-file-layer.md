@@ -824,6 +824,8 @@ export const fileApi = {
 顶部 import 追加 `FileTreeNode, RecentFile, WorkspaceInfo`，并在 `Window['api']` 中追加两个字段：
 
 ```ts
+/// <reference types="vite/client" />
+
 import type { User, UserInput, SystemInfo, IpcResult, FileTreeNode, RecentFile, WorkspaceInfo } from '@shared/types'
 
 declare global {
@@ -857,6 +859,8 @@ declare global {
     }
   }
 }
+
+export {}
 ```
 
 （用完整文件覆盖 `env.d.ts`，保留原 user/system 声明并追加 workspace/file。）
