@@ -6,9 +6,9 @@ import type { IpcResult } from '@shared/types'
  * 每个模块注册 handler 时复用这个 helper，避免重复 try/catch。
  */
 export function handle(channel: string, fn: (...args: unknown[]) => unknown): void {
-  ipcMain.handle(channel, (_event, ...args: unknown[]): IpcResult<unknown> => {
+  ipcMain.handle(channel, async (_event, ...args: unknown[]): Promise<IpcResult<unknown>> => {
     try {
-      return { ok: true, data: fn(...args) }
+      return { ok: true, data: await fn(...args) }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
     }

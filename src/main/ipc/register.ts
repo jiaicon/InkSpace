@@ -1,6 +1,8 @@
 import type Database from 'better-sqlite3'
 import { registerUserIpc } from '../modules/user'
 import { registerSystemIpc } from '../modules/system'
+import { registerWorkspaceIpc } from '../modules/workspace'
+import { registerFileIpc } from '../modules/file'
 
 /**
  * 汇总注册所有模块的 IPC handler。
@@ -9,4 +11,6 @@ import { registerSystemIpc } from '../modules/system'
 export function registerIpc(db: Database.Database): void {
   registerUserIpc(db)
   registerSystemIpc()
+  registerWorkspaceIpc(db)
+  registerFileIpc()
 }
