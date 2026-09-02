@@ -31,6 +31,7 @@ export default function App() {
       try {
         await fileApi.write(path, md)
         markSaved(path)
+        if (pendingPathRef.current === path) pendingPathRef.current = null
       } catch (e) {
         message.error(`保存失败：${e instanceof Error ? e.message : String(e)}`)
       }
@@ -38,6 +39,7 @@ export default function App() {
     [markSaved]
   )
   const saveRef = useRef(debounce(doSave, 500))
+  const pendingPathRef = useRef<string | null>(null)
 
   // 编辑器当前显示路径 + 当前激活路径（用 ref 避免 onChange 闭包过期）
   const displayedPathRef = useRef<string | null>(null)
@@ -49,6 +51,7 @@ export default function App() {
       const path = activePathRef.current
       if (!path) return
       onEdit(path, md)
+      pendingPathRef.current = path
       saveRef.current(path, md)
     },
     [onEdit]
@@ -136,10 +139,14 @@ export default function App() {
 
   // —— Tab 关闭（含 dirty 确认）——
   const finalizeClose = useCallback(
-    async (path: string) => {
-      await saveRef.current.flush()
+    async (path: string, save: boolean) => {
+      if (save) {
+        await saveRef.current.flush()
+      } else if (pendingPathRef.current === path) {
+        saveRef.current.cancel()
+        pendingPathRef.current = null
+      }
       const st = useWorkspaceStore.getState()
-      const idx = st.tabs.findIndex((t) => t.path === path)
       const wasActive = st.activePath === path
       removeTab(path)
       if (wasActive) {
@@ -158,7 +165,7 @@ export default function App() {
   const requestClose = useCallback((path: string) => {
     const tab = useWorkspaceStore.getState().tabs.find((t) => t.path === path)
     if (tab?.dirty) setPendingClose(path)
-    else void finalizeClose(path)
+    else void finalizeClose(path, true)
   }, [finalizeClose])
 
   const handleTabChange = useCallback(
@@ -183,6 +190,7 @@ export default function App() {
     setRenaming(null)
     if (!name) return
     try {
+      if (pendingPathRef.current === path) await saveRef.current.flush()
       const newPath = await fileApi.rename(path, `${name}.md`)
       renameTab(path, newPath, name)
       if (displayedPathRef.current === path) displayedPathRef.current = newPath
@@ -207,7 +215,7 @@ export default function App() {
           try {
             await fileApi.remove(path)
             if (displayedPathRef.current === path) displayedPathRef.current = null
-            await finalizeClose(path)
+            await finalizeClose(path, false)
             await refreshTree()
             workspaceApi.recentRemove(path).catch(() => {})
             setRecent(await workspaceApi.recentList())
@@ -277,7 +285,7 @@ export default function App() {
             onClick={() => {
               const p = pendingClose
               setPendingClose(null)
-              if (p) void finalizeClose(p)
+              if (p) void finalizeClose(p, false)
             }}
           >
             不保存
@@ -288,11 +296,7 @@ export default function App() {
             onClick={async () => {
               const p = pendingClose
               setPendingClose(null)
-              if (p) {
-                const md = useWorkspaceStore.getState().contents[p]
-                if (md != null) await doSave(p, md)
-                await finalizeClose(p)
-              }
+              if (p) await finalizeClose(p, true)
             }}
           >
             保存
