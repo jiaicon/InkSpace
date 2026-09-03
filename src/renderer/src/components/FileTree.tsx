@@ -1,4 +1,4 @@
-import { Button, Dropdown, Space, Tree, Typography } from 'antd'
+import { Button, Dropdown, Tree, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import { FolderOpenOutlined } from '@ant-design/icons'
@@ -19,7 +19,7 @@ interface FileTreeProps {
   onClearRecent(): void
 }
 
-function fileMenu(n: FileTreeNode, props: FileTreeProps): MenuProps['items'] {
+function fileMenu(n: FileTreeNode): MenuProps['items'] {
   if (n.type === 'file') {
     return [
       { key: 'rename', label: '重命名' },
@@ -31,7 +31,19 @@ function fileMenu(n: FileTreeNode, props: FileTreeProps): MenuProps['items'] {
 }
 
 export function FileTree(props: FileTreeProps) {
-  const { workspacePath, tree, recent, activePath, onOpenWorkspace, onOpenFile, onNewFile, onRename, onDelete, onReveal, onClearRecent } = props
+  const {
+    workspacePath,
+    tree,
+    recent,
+    activePath,
+    onOpenWorkspace,
+    onOpenFile,
+    onNewFile,
+    onRename,
+    onDelete,
+    onReveal,
+    onClearRecent
+  } = props
 
   const toData = (nodes: FileTreeNode[]): DataNode[] =>
     nodes.map((n) => ({
@@ -40,7 +52,7 @@ export function FileTree(props: FileTreeProps) {
         <Dropdown
           trigger={['contextMenu']}
           menu={{
-            items: fileMenu(n, props),
+            items: fileMenu(n),
             onClick: ({ key }) => {
               if (key === 'rename') onRename(n.path)
               else if (key === 'delete') onDelete(n.path)
@@ -57,7 +69,10 @@ export function FileTree(props: FileTreeProps) {
     }))
 
   return (
-    <div className="ms-filetree" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div
+      className="ms-filetree"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
       <div className="ms-filetree-header">
         {workspacePath ? (
           <>

@@ -8,7 +8,8 @@ import type { EditorHandle, EditorMode, EditorProps } from './types'
 type Adapter = MarkdownEditorAdapter | SourceEditorAdapter
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(props, ref) {
-  const { initialMarkdown, onChange, onChangeDirty, onModeChange, onOutlineChange, onRequestLink } = props
+  const { initialMarkdown, onChange, onChangeDirty, onModeChange, onOutlineChange, onRequestLink } =
+    props
   const containerRef = useRef<HTMLDivElement>(null)
   const adapterRef = useRef<Adapter | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -96,15 +97,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     hasSelection: () => adapterRef.current?.hasSelection() ?? false
   }))
 
+  // 有意只挂载一次：mount/emitOutline 仅依赖 ref，闭包不会过期；
+  // StrictMode/快速切换模式靠 mountSeqRef 丢弃过期实例，故无需补依赖。
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    mount('wysiwyg').then(emitOutline).catch((e) => setError(e instanceof Error ? e.message : String(e)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    mount('wysiwyg')
+      .then(emitOutline)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
     return () => {
       mountSeqRef.current++
       adapterRef.current?.destroy()
       adapterRef.current = null
     }
   }, [])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   if (error) {
     return (

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { mkdtemp, writeFile, readFile, access, rm } from 'node:fs/promises'
+import { mkdtemp, access, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createFileService } from '../src/main/modules/file/service'

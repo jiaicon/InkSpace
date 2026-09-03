@@ -27,7 +27,21 @@
       "Bash(grep -rn '$command\\\\|findWrapping' node_modules/@milkdown/kit/lib/utils.d.ts)",
       "Bash(grep -n \"listItemSchema = \\\\$\\\\|attrs: {\\\\|label: {\\\\|listType: {\\\\|spread: {\\\\|loose: {\\\\|checked: {\\\\|default:\" node_modules/@milkdown/preset-commonmark/lib/index.js)",
       "Bash(node -e \"console.log\\(require.resolve\\('@milkdown/prose/tables'\\)\\)\")",
-      "Bash(node -e \"console.log\\(require.resolve\\('@milkdown/kit/prose/tables'\\)\\)\")"
+      "Bash(node -e \"console.log\\(require.resolve\\('@milkdown/kit/prose/tables'\\)\\)\")",
+      "Bash(git config *)",
+      "Bash(pnpm exec *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('scripts:', JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('devDeps husky/lint-staged:', p.devDependencies.husky, p.devDependencies['lint-staged']\\)\")",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('prepare script:', p.scripts.prepare\\); console.log\\('all scripts:', Object.keys\\(p.scripts\\).join\\(', '\\)\\)\")",
+      "Bash(git reset *)",
+      "Bash(awk '{ print length\\($0\\), $0 }')",
+      "Bash(awk '{ print $1 }')",
+      "Bash(awk '{ if \\(length\\($0\\) > 95\\) print FILENAME\":\"NR\" \\(\"length\\($0\\)\"\\)\" }')",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const d=p.devDependencies; console.log\\('eslint:', d.eslint, '| typescript-eslint:', d['typescript-eslint'], '| prettier:', d.prettier, '| eslint-config-prettier:', d['eslint-config-prettier'], '| react-hooks:', d['eslint-plugin-react-hooks']\\)\")",
+      "Bash(node -e \"import\\('eslint-plugin-react-hooks'\\).then\\(m => { const p = m.default; console.log\\('configs keys:', Object.keys\\(p.configs\\)\\); console.log\\('flat keys:', p.configs.flat ? Object.keys\\(p.configs.flat\\) : 'n/a'\\); }\\)\")",
+      "Bash(node -e \"import\\('eslint-plugin-react-hooks'\\).then\\(m => { const c = m.default.configs.flat['recommended-latest']; console.log\\('keys:', Object.keys\\(c\\)\\); console.log\\('has plugins:', !!c.plugins, '| has rules:', !!c.rules, '| rules count:', Object.keys\\(c.rules||{}\\).length\\); }\\)\")",
+      "Bash(node -e \"import\\('typescript-eslint'\\).then\\(m => { const r = m.configs.recommended; console.log\\('is array:', Array.isArray\\(r\\)\\); const arr = Array.isArray\\(r\\) ? r : [r]; arr.forEach\\(\\(c,i\\) => console.log\\(i, 'files:', JSON.stringify\\(c.files\\), '| has parser:', !!c.languageOptions?.parser, '| name:', c.name\\)\\); }\\)\")",
+      "Bash(node -e \"import\\('eslint-plugin-react-hooks'\\).then\\(m => { const r = m.default.configs.flat.recommended.rules; const l = m.default.configs.flat['recommended-latest'].rules; console.log\\('STABLE recommended rules:'\\); Object.keys\\(r\\).forEach\\(k=>console.log\\('  ',k, JSON.stringify\\(r[k]\\)\\)\\); console.log\\('LATEST-only rules \\(not in stable\\):'\\); Object.keys\\(l\\).filter\\(k=>!r[k]\\).forEach\\(k=>console.log\\('  ',k, JSON.stringify\\(l[k]\\)\\)\\); }\\)\")"
     ]
   }
 }
