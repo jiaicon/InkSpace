@@ -16,4 +16,4 @@ mac:
   target: [dmg]
 linux:
   target: [AppImage]
-npmRebuild: true
+npmRebuild: false
