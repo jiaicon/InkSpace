@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, ConfigProvider, Input, Layout, Modal, message } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { Editor } from './editor'
@@ -40,6 +40,35 @@ export default function App() {
   )
   const saveRef = useRef(debounce(doSave, 500))
   const pendingPathRef = useRef<string | null>(null)
+
+  // —— 启动恢复：上次工作区 + 最近打开 ——
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const last = await workspaceApi.last()
+        if (last) {
+          setWorkspace(last)
+          setTree(await workspaceApi.tree(last))
+        }
+      } catch {
+        // 启动恢复失败静默，不阻塞首次交互
+      }
+      try {
+        setRecent(await workspaceApi.recentList())
+      } catch {
+        // 同上
+      }
+    })()
+  }, [setWorkspace, setTree, setRecent])
+
+  // —— 退出前尽力 flush 未落盘编辑 ——
+  useEffect(() => {
+    const h = () => {
+      void saveRef.current.flush()
+    }
+    window.addEventListener('beforeunload', h)
+    return () => window.removeEventListener('beforeunload', h)
+  }, [])
 
   // 编辑器当前显示路径 + 当前激活路径（用 ref 避免 onChange 闭包过期）
   const displayedPathRef = useRef<string | null>(null)
@@ -141,7 +170,16 @@ export default function App() {
   const finalizeClose = useCallback(
     async (path: string, save: boolean) => {
       if (save) {
-        await saveRef.current.flush()
+        const st = useWorkspaceStore.getState()
+        const tab = st.tabs.find((t) => t.path === path)
+        if (tab?.dirty) {
+          // 关闭保存：直接写该 tab 当前内容，不依赖共享防抖的 lastArgs（防抖可能已 fire 失败或指向其它 tab）
+          if (pendingPathRef.current === path) {
+            saveRef.current.cancel()
+            pendingPathRef.current = null
+          }
+          await doSave(path, st.contents[path] ?? '')
+        }
       } else if (pendingPathRef.current === path) {
         saveRef.current.cancel()
         pendingPathRef.current = null
@@ -159,7 +197,7 @@ export default function App() {
         }
       }
     },
-    [removeTab, showFile]
+    [removeTab, showFile, doSave]
   )
 
   const requestClose = useCallback((path: string) => {
@@ -213,6 +251,11 @@ export default function App() {
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
+            // 先取消该路径的待写防抖，避免 remove 后延迟的写盘重建文件
+            if (pendingPathRef.current === path) {
+              saveRef.current.cancel()
+              pendingPathRef.current = null
+            }
             await fileApi.remove(path)
             if (displayedPathRef.current === path) displayedPathRef.current = null
             await finalizeClose(path, false)
