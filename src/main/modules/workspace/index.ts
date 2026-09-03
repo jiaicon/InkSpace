@@ -21,4 +21,5 @@ export function registerWorkspaceIpc(db: Database.Database): void {
   handle(IPC.recentList, () => svc.listRecent())
   handle(IPC.recentAdd, (path, title) => svc.addRecent(path as string, title as string))
   handle(IPC.recentRemove, (path) => svc.removeRecent(path as string))
+  handle(IPC.recentClear, () => svc.clearRecent())
 }

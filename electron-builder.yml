@@ -1,7 +1,8 @@
-appId: com.jiaicon.electronapp
-productName: ElectronApp
+appId: com.inkspace.app
+productName: InkSpace
 directories:
   output: release
+  buildResources: build
 files:
   - out/**
 asarUnpack:

@@ -4,12 +4,16 @@ import { openDatabase } from "./db/database";
 import { migrate } from "./db/migrate";
 import { registerIpc } from "./ipc/register";
 
+// 应用显示名：中文「墨境」；英文名 InkSpace 用于打包（exe/安装器/productName）
+app.setName("墨境");
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    title: "墨境",
     show: false,
     autoHideMenuBar: true,
     webPreferences: {

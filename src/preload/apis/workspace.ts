@@ -8,5 +8,6 @@ export const workspaceApi = {
   tree: (root: string) => ipcRenderer.invoke(IPC.workspaceTree, root),
   recentList: () => ipcRenderer.invoke(IPC.recentList),
   recentAdd: (path: string, title: string) => ipcRenderer.invoke(IPC.recentAdd, path, title),
-  recentRemove: (path: string) => ipcRenderer.invoke(IPC.recentRemove, path)
+  recentRemove: (path: string) => ipcRenderer.invoke(IPC.recentRemove, path),
+  recentClear: () => ipcRenderer.invoke(IPC.recentClear)
 }

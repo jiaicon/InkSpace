@@ -35,4 +35,12 @@ describe('workspace service (settings + recent)', () => {
     svc.removeRecent('D:/a.md')
     expect(svc.listRecent()).toHaveLength(0)
   })
+
+  it('clears all recent records (清空记录，不删文件)', () => {
+    const svc = setup()
+    svc.addRecent('D:/a.md', 'a')
+    svc.addRecent('D:/b.md', 'b')
+    svc.clearRecent()
+    expect(svc.listRecent()).toHaveLength(0)
+  })
 })

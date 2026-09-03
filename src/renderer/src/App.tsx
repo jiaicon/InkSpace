@@ -1,18 +1,56 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, ConfigProvider, Input, Layout, Modal, message } from 'antd'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, ConfigProvider, Input, Layout, Modal, message, theme as antdTheme } from 'antd'
+import type { ThemeConfig } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import { Editor } from './editor'
-import type { EditorHandle } from './editor'
+import { CodeOutlined, EditOutlined, BulbOutlined, PictureOutlined, LinkOutlined, FileAddOutlined, SaveOutlined, ExportOutlined } from '@ant-design/icons'
+import { Editor, parseOutline } from './editor'
+import type { EditorHandle, EditorMode } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
 import { titleFromPath, dirname } from './utils/path'
 import { workspaceApi } from './api/workspace'
 import { fileApi } from './api/file'
-import { FileTree } from './components/FileTree'
+import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { Welcome } from './components/Welcome'
 import { debounce } from './utils/debounce'
+import { countStats } from './utils/stats'
 
 const SIDEBAR_WIDTH = 280
+
+const FONT_SANS =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif"
+
+// Typora 风格的 antd 主题令牌（与 theme.css 的 --ms-* 变量保持一致）。
+// 按明暗分别取色：antd 暗色算法会把这些 seed 视为「真值」而不再套用自身默认，
+// 所以必须显式给暗色一套，否则切暗色后文字/图标仍沿用亮色、导致不可见。
+function getAppTheme(mode: 'light' | 'dark'): ThemeConfig {
+  const dark = mode === 'dark'
+  return {
+    token: {
+      colorPrimary: dark ? '#4c9aff' : '#0969da',
+      colorLink: dark ? '#4c9aff' : '#0969da',
+      colorTextBase: dark ? '#d4d4d4' : '#24292f',
+      colorBgBase: dark ? '#1e1e1e' : '#ffffff',
+      colorBorder: dark ? '#3a3a3a' : '#e4e7eb',
+      colorBorderSecondary: dark ? '#3a3a3a' : '#e4e7eb',
+      borderRadius: 6,
+      fontFamily: FONT_SANS
+    },
+    components: {
+      Tree: {
+        colorBgContainer: 'transparent',
+        nodeSelectedBg: dark ? 'rgba(76, 154, 255, 0.16)' : '#e8f0fe',
+        nodeHoverBg: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)'
+      },
+      Tabs: {
+        cardBg: 'transparent',
+        itemColor: dark ? '#9d9d9d' : '#6e7781',
+        itemSelectedColor: dark ? '#e8e8e8' : '#24292f',
+        itemActiveColor: dark ? '#4c9aff' : '#0969da'
+      }
+    }
+  }
+}
 
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
@@ -24,6 +62,19 @@ export default function App() {
   const [pendingClose, setPendingClose] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [urlKind, setUrlKind] = useState<'image' | 'link' | null>(null)
+  const [urlValue, setUrlValue] = useState('')
+
+  // —— 显示模式（wysiwyg / source）与主题（light / dark） ——
+  const [mode, setMode] = useState<EditorMode>('wysiwyg')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (localStorage.getItem('ms-theme') as 'light' | 'dark') ?? 'light'
+  )
+
+  // —— 大纲与字数统计（随当前文档变化） ——
+  const currentMd = contents[activePath ?? ''] ?? ''
+  const outline = useMemo(() => parseOutline(currentMd), [currentMd])
+  const stats = useMemo(() => countStats(currentMd), [currentMd])
 
   // —— 自动保存：500ms 防抖写盘 ——
   const doSave = useCallback(
@@ -70,14 +121,73 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', h)
   }, [])
 
-  // 编辑器当前显示路径 + 当前激活路径（用 ref 避免 onChange 闭包过期）
+  // —— 主题应用到 <html data-theme> 并持久化 ——
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('ms-theme', theme)
+  }, [theme])
+
+  // —— 源码模式切换（工具栏按钮与 Ctrl+/ 共用） ——
+  const toggleMode = useCallback(() => {
+    editorRef.current?.setMode(mode === 'wysiwyg' ? 'source' : 'wysiwyg')
+  }, [mode])
+
+  const toggleTheme = useCallback(() => {
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'))
+  }, [])
+
+  // —— 图片 / 链接插入 ——
+  const requestImage = useCallback(() => {
+    setUrlKind('image')
+    setUrlValue('')
+  }, [])
+
+  const requestLink = useCallback(() => {
+    if (!editorRef.current?.hasSelection()) {
+      message.info('请先选中要添加链接的文字')
+      return
+    }
+    setUrlKind('link')
+    setUrlValue('')
+  }, [])
+
+  const confirmUrl = useCallback(() => {
+    const url = urlValue.trim()
+    if (!url) return
+    if (urlKind === 'image') editorRef.current?.insertImage(url)
+    else if (urlKind === 'link') editorRef.current?.setLink(url)
+    setUrlKind(null)
+  }, [urlKind, urlValue])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault()
+        toggleMode()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [toggleMode])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        if (urlKind) return
+        requestLink()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [urlKind, requestLink])
+
+  // 编辑器当前显示路径（用 ref 避免 onChange 闭包过期；编辑内容归属当前显示的文档）
   const displayedPathRef = useRef<string | null>(null)
-  const activePathRef = useRef(activePath)
-  activePathRef.current = activePath
 
   const handleEdit = useCallback(
     (md: string) => {
-      const path = activePathRef.current
+      const path = displayedPathRef.current
       if (!path) return
       onEdit(path, md)
       pendingPathRef.current = path
@@ -133,6 +243,16 @@ export default function App() {
     setTree(await workspaceApi.tree(path))
   }, [setTree])
 
+  // —— 清空最近打开记录（只清记录，不删文件） ——
+  const clearRecent = useCallback(async () => {
+    try {
+      await workspaceApi.recentClear()
+      setRecent([])
+    } catch (e) {
+      message.error(`清除失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [setRecent])
+
   const newFile = useCallback(
     async (dir?: string) => {
       const base = dir ?? useWorkspaceStore.getState().workspacePath
@@ -165,6 +285,30 @@ export default function App() {
       message.error(`另存为失败：${e instanceof Error ? e.message : String(e)}`)
     }
   }, [refreshTree, openFile])
+
+  // —— 手动保存（Ctrl+S / 工具栏）：立即写盘，取消防抖中同路径的待写 ——
+  const handleSave = useCallback(async () => {
+    const st = useWorkspaceStore.getState()
+    if (!st.activePath) return
+    const md = st.contents[st.activePath]
+    if (md == null) return
+    if (pendingPathRef.current === st.activePath) {
+      saveRef.current.cancel()
+      pendingPathRef.current = null
+    }
+    await doSave(st.activePath, md)
+  }, [doSave])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        void handleSave()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleSave])
 
   // —— Tab 关闭（含 dirty 确认）——
   const finalizeClose = useCallback(
@@ -274,43 +418,78 @@ export default function App() {
   const hasTabs = tabs.length > 0
 
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        ...getAppTheme(theme),
+        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm
+      }}
+    >
       <Layout style={{ height: '100vh' }}>
-        <Layout.Sider width={SIDEBAR_WIDTH} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
-          <FileTree
+        <Layout.Sider width={SIDEBAR_WIDTH} theme="light" className="ms-sider">
+          <Sidebar
             workspacePath={workspacePath}
             tree={tree}
             recent={recent}
+            activePath={activePath}
+            outline={outline}
             onOpenWorkspace={openWorkspace}
             onOpenFile={openFile}
             onNewFile={newFile}
             onRename={requestRename}
             onDelete={confirmDelete}
             onReveal={(path) => fileApi.reveal(path).catch((e) => message.error(String(e)))}
+            onClearRecent={clearRecent}
+            onJumpOutline={(i) => editorRef.current?.scrollToHeading(i)}
           />
         </Layout.Sider>
 
         <Layout>
-          <Layout.Header style={{ background: '#fff', padding: '0 8px', height: 40, lineHeight: '40px', display: 'flex', alignItems: 'center' }}>
-            <TabBar tabs={tabs} activePath={activePath} onChange={handleTabChange} onClose={requestClose} />
+          <Layout.Header className="ms-header" style={{ padding: '0 8px', height: 40, lineHeight: '40px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'center' }}>
+              <TabBar tabs={tabs} activePath={activePath} onChange={handleTabChange} onClose={requestClose} />
+            </div>
+            <Button type="text" size="small" icon={<FileAddOutlined />} title="新建文件" onClick={() => newFile()} />
+            <Button type="text" size="small" icon={<SaveOutlined />} title="保存 (Ctrl+S)" onClick={handleSave} />
+            <Button type="text" size="small" icon={<ExportOutlined />} title="另存为" onClick={saveAs} />
+            <Button type="text" size="small" icon={<PictureOutlined />} title="插入图片" onClick={requestImage} />
+            <Button type="text" size="small" icon={<LinkOutlined />} title="插入链接 (Ctrl+K)" onClick={requestLink} />
+            <Button
+              type="text"
+              size="small"
+              icon={mode === 'wysiwyg' ? <CodeOutlined /> : <EditOutlined />}
+              title={mode === 'wysiwyg' ? '源码模式 (Ctrl+/)' : '所见即所得 (Ctrl+/)'}
+              onClick={toggleMode}
+            />
+            <Button type="text" size="small" icon={<BulbOutlined />} title="切换主题" onClick={toggleTheme} />
           </Layout.Header>
 
-          <Layout.Content style={{ background: '#fff', overflow: 'hidden' }}>
-            {hasTabs && activePath ? (
-              <Editor
-                ref={editorRef}
-                initialMarkdown={contents[activePath] ?? ''}
-                onChange={handleEdit}
-                onChangeDirty={() => {}}
-              />
-            ) : (
-              <Welcome
-                recent={recent.map((r) => r.path)}
-                onOpenWorkspace={openWorkspace}
-                onNewFile={() => newFile()}
-                onOpenRecent={openFile}
-              />
-            )}
+          <Layout.Content className="ms-content" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              {hasTabs && activePath ? (
+                <Editor
+                  ref={editorRef}
+                  initialMarkdown={contents[activePath] ?? ''}
+                  onChange={handleEdit}
+                  onChangeDirty={() => {}}
+                  onModeChange={setMode}
+                  onRequestLink={requestLink}
+                />
+              ) : (
+                <Welcome
+                  recent={recent.map((r) => r.path)}
+                  onOpenWorkspace={openWorkspace}
+                  onNewFile={() => newFile()}
+                  onOpenRecent={openFile}
+                />
+              )}
+            </div>
+            <div className="ms-statusbar">
+              <span>字数 {stats.words}</span>
+              <span>字符 {stats.chars}</span>
+              <span>行 {stats.lines}</span>
+              <span style={{ marginLeft: 'auto' }}>{mode === 'wysiwyg' ? '所见即所得' : '源码模式'}</span>
+            </div>
           </Layout.Content>
         </Layout>
       </Layout>
@@ -361,6 +540,23 @@ export default function App() {
           onChange={(e) => setRenameValue(e.target.value)}
           onPressEnter={confirmRename}
           placeholder="文件名（不含扩展名）"
+        />
+      </Modal>
+
+      <Modal
+        open={urlKind != null}
+        title={urlKind === 'image' ? '插入图片' : '插入链接'}
+        onOk={confirmUrl}
+        onCancel={() => setUrlKind(null)}
+        okText="确定"
+        okButtonProps={{ disabled: !urlValue.trim() }}
+      >
+        <Input
+          value={urlValue}
+          onChange={(e) => setUrlValue(e.target.value)}
+          onPressEnter={confirmUrl}
+          placeholder={urlKind === 'image' ? '图片地址（https://…）' : '链接地址（https://…）'}
+          autoFocus
         />
       </Modal>
     </ConfigProvider>

@@ -10,6 +10,7 @@ export interface WorkspaceService {
   listRecent(): RecentFile[]
   addRecent(path: string, title: string): void
   removeRecent(path: string): void
+  clearRecent(): void
 }
 
 /**
@@ -23,6 +24,7 @@ export function createWorkspaceService(db: Database.Database): WorkspaceService 
     readTree: (root) => buildFileTree(root),
     listRecent: () => repo.listRecent(),
     addRecent: (path, title) => repo.upsertRecent(path, title),
-    removeRecent: (path) => repo.deleteRecent(path)
+    removeRecent: (path) => repo.deleteRecent(path),
+    clearRecent: () => repo.clearRecent()
   }
 }

@@ -1,0 +1,685 @@
+/* ==========================================================================
+   Markdown Studio — Typora-like theme
+   CSS variables are the single source of truth for theming (spec §7.3).
+   ========================================================================== */
+
+:root {
+  /* 色板 */
+  --ms-bg: #ffffff;
+  --ms-sidebar-bg: #f7f7f7;
+  --ms-panel-bg: #f6f8fa;
+  --ms-text: #24292f;
+  --ms-text-secondary: #6e7781;
+  --ms-heading: #1f2328;
+  --ms-border: #e4e7eb;
+  --ms-border-strong: #d0d7de;
+  --ms-accent: #0969da;
+  --ms-accent-hover: #0550ae;
+  --ms-code-bg: #f6f8fa;
+  --ms-code-text: #24292f;
+  --ms-blockquote-bg: #f6f8fa;
+  --ms-blockquote-border: #d0d7de;
+  --ms-blockquote-text: #57606a;
+  --ms-selection: #b6d7ff;
+  --ms-hr: #e4e7eb;
+  --ms-table-border: #d0d7de;
+  --ms-table-header-bg: #f6f8fa;
+
+  /* 字体 */
+  --ms-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
+    Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  --ms-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+}
+
+/* ---------- 基础 ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--ms-font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ms-text);
+  background: var(--ms-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--ms-selection);
+}
+
+/* 细滚动条（Typora 风格） */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b1bac4;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ==========================================================================
+   WYSIWYG 编辑区（Milkdown / ProseMirror）
+   ========================================================================== */
+
+.milkdown {
+  min-height: 100%;
+}
+
+/* 居中阅读栏：接近 Typora 的舒适排版 */
+.milkdown .editor {
+  min-height: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 56px 40vh;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ms-text);
+  outline: none;
+  caret-color: var(--ms-accent);
+  word-break: break-word;
+}
+
+/* 标题：Typora 不加下划线，仅加粗放大 */
+.milkdown .editor h1,
+.milkdown .editor h2,
+.milkdown .editor h3,
+.milkdown .editor h4,
+.milkdown .editor h5,
+.milkdown .editor h6 {
+  font-weight: 600;
+  color: var(--ms-heading);
+  line-height: 1.25;
+  margin: 1.6em 0 0.6em;
+}
+
+.milkdown .editor h1 {
+  font-size: 2em;
+  margin-top: 0.8em;
+}
+.milkdown .editor h2 {
+  font-size: 1.5em;
+}
+.milkdown .editor h3 {
+  font-size: 1.25em;
+}
+.milkdown .editor h4 {
+  font-size: 1.1em;
+}
+.milkdown .editor h5 {
+  font-size: 1em;
+}
+.milkdown .editor h6 {
+  font-size: 0.9em;
+  color: var(--ms-text-secondary);
+}
+
+.milkdown .editor p {
+  margin: 0 0 1em;
+}
+
+/* 列表 */
+.milkdown .editor ul,
+.milkdown .editor ol {
+  padding-left: 1.6em;
+  margin: 0 0 1em;
+}
+.milkdown .editor ul {
+  list-style: disc;
+}
+.milkdown .editor ul ul {
+  list-style: circle;
+}
+.milkdown .editor ul ul ul {
+  list-style: square;
+}
+.milkdown .editor ol {
+  list-style: decimal;
+}
+.milkdown .editor li {
+  margin: 0.25em 0;
+}
+.milkdown .editor li p {
+  margin: 0;
+}
+
+/* 任务列表（GFM）：绘制复选框 */
+.milkdown .editor li[data-item-type='task'] {
+  list-style: none;
+  position: relative;
+  padding-left: 1.6em;
+}
+.milkdown .editor li[data-item-type='task']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 1.1em;
+  height: 1.1em;
+  border: 1px solid var(--ms-table-border);
+  border-radius: 4px;
+  background: #fff;
+}
+.milkdown .editor li[data-item-type='task'][data-checked='true'] {
+  color: var(--ms-text-secondary);
+}
+.milkdown .editor li[data-item-type='task'][data-checked='true']::before {
+  content: '✓';
+  background: var(--ms-accent);
+  border-color: var(--ms-accent);
+  color: #fff;
+  font-size: 0.8em;
+  line-height: 1.2em;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* 引用 */
+.milkdown .editor blockquote {
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--ms-blockquote-border);
+  background: var(--ms-blockquote-bg);
+  color: var(--ms-blockquote-text);
+  border-radius: 0 4px 4px 0;
+}
+.milkdown .editor blockquote p {
+  margin: 0;
+}
+
+/* 行内代码 */
+.milkdown .editor :not(pre) > code {
+  font-family: var(--ms-font-mono);
+  font-size: 0.85em;
+  background: var(--ms-code-bg);
+  color: var(--ms-code-text);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+/* 代码块 */
+.milkdown .editor pre {
+  background: var(--ms-code-bg);
+  padding: 16px;
+  border-radius: 6px;
+  overflow: auto;
+  margin: 0 0 1em;
+  line-height: 1.5;
+}
+/* 代码块语言徽标 */
+.milkdown .editor pre[data-language] {
+  padding-top: 32px;
+  position: relative;
+}
+.milkdown .editor pre[data-language]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  font-family: var(--ms-font-mono);
+  font-size: 0.7em;
+  text-transform: uppercase;
+  color: var(--ms-text-secondary);
+  letter-spacing: 0.05em;
+}
+.milkdown .editor pre code {
+  background: none;
+  padding: 0;
+  font-family: var(--ms-font-mono);
+  font-size: 0.85em;
+  color: var(--ms-code-text);
+  border-radius: 0;
+}
+
+/* 链接 */
+.milkdown .editor a {
+  color: var(--ms-accent);
+  text-decoration: none;
+}
+.milkdown .editor a:hover {
+  text-decoration: underline;
+}
+
+/* 分割线 */
+.milkdown .editor hr {
+  border: none;
+  border-top: 1px solid var(--ms-hr);
+  margin: 2em 0;
+}
+
+/* 图片 */
+.milkdown .editor img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+/* 空文档占位提示 */
+.milkdown .editor .ms-placeholder {
+  color: var(--ms-text-secondary);
+  pointer-events: none;
+  opacity: 0.65;
+  font-style: italic;
+  user-select: none;
+}
+
+/* 斜杠菜单（/ 呼出） */
+.ms-slash-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 220px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  background: var(--ms-bg);
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.ms-slash-menu[data-show='false'] {
+  display: none;
+}
+.ms-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ms-text);
+}
+.ms-slash-item.is-active {
+  background: var(--ms-accent);
+  color: #fff;
+}
+.ms-slash-icon {
+  width: 30px;
+  flex: none;
+  font-family: var(--ms-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ms-text-secondary);
+  text-align: center;
+}
+.ms-slash-item.is-active .ms-slash-icon {
+  color: rgba(255, 255, 255, 0.85);
+}
+.ms-slash-label {
+  flex: 1;
+}
+
+/* 选中工具条 */
+.ms-selection-toolbar {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ms-bg);
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+}
+.ms-selection-toolbar[data-show='false'] {
+  display: none;
+}
+.ms-selection-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ms-text);
+}
+.ms-selection-btn:hover {
+  background: var(--ms-panel-bg);
+}
+.ms-selection-btn.is-bold {
+  font-weight: 700;
+}
+.ms-selection-btn.is-italic {
+  font-style: italic;
+}
+.ms-selection-btn.is-strike {
+  text-decoration: line-through;
+}
+.ms-selection-btn.is-code {
+  font-family: var(--ms-font-mono);
+  font-size: 12px;
+}
+
+/* 表格工具条 */
+.ms-table-toolbar {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ms-bg);
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+}
+.ms-table-toolbar[data-show='false'] {
+  display: none;
+}
+.ms-table-btn {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--ms-text);
+}
+.ms-table-btn:hover {
+  background: var(--ms-panel-bg);
+}
+.ms-table-btn.is-danger {
+  color: #d4380d;
+}
+
+/* 强调 / 删除线 */
+.milkdown .editor strong {
+  font-weight: 600;
+}
+.milkdown .editor em {
+  font-style: italic;
+}
+.milkdown .editor del {
+  color: var(--ms-text-secondary);
+}
+
+/* 表格（GFM） */
+.milkdown .editor .tableWrapper {
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+.milkdown .editor table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+.milkdown .editor th,
+.milkdown .editor td {
+  border: 1px solid var(--ms-table-border);
+  padding: 6px 13px;
+  position: relative;
+}
+.milkdown .editor th {
+  background: var(--ms-table-header-bg);
+  font-weight: 600;
+}
+.milkdown .editor tr:nth-child(2n) td {
+  background: var(--ms-panel-bg);
+}
+/* 列宽调整（columnResizingPlugin）：拖拽列边沿调整宽度 */
+.milkdown .editor .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 20;
+  background: var(--ms-accent);
+  pointer-events: none;
+}
+.milkdown .editor.resize-cursor {
+  cursor: col-resize;
+}
+.milkdown .editor .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   源码模式（CodeMirror）
+   ========================================================================== */
+
+.cm-editor {
+  height: 100%;
+  font-size: 14px;
+  background: var(--ms-bg);
+  color: var(--ms-text);
+}
+.cm-editor .cm-scroller {
+  font-family: var(--ms-font-mono);
+  line-height: 1.6;
+}
+.cm-editor .cm-gutters {
+  background: var(--ms-sidebar-bg);
+  border-right: 1px solid var(--ms-border);
+  color: var(--ms-text-secondary);
+}
+.cm-editor .cm-activeLine,
+.cm-editor .cm-activeLineGutter {
+  background: transparent;
+}
+.cm-editor .cm-content {
+  padding: 24px 0;
+}
+
+/* ==========================================================================
+   布局（侧栏 / 顶栏）
+   ========================================================================== */
+
+.ms-sider {
+  background: var(--ms-sidebar-bg) !important;
+  border-right: 1px solid var(--ms-border) !important;
+}
+.ms-sider .ant-tree {
+  background: transparent;
+}
+.ms-sider .ant-tree .ant-tree-node-content-wrapper {
+  transition: none;
+}
+.ms-sider .ant-tree .ant-tree-treenode:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.ms-header {
+  background: var(--ms-bg) !important;
+  border-bottom: 1px solid var(--ms-border);
+}
+
+/* 顶栏标签：扁平、下划线高亮（Typora 的克制感） */
+.ms-header .ant-tabs {
+  height: 100%;
+}
+.ms-header .ant-tabs-nav {
+  margin: 0 !important;
+}
+.ms-header .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--ms-text-secondary);
+  height: 40px;
+  line-height: 40px;
+}
+.ms-header .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab:hover {
+  color: var(--ms-text);
+}
+.ms-header .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background: transparent;
+  color: var(--ms-text);
+  box-shadow: inset 0 -2px 0 var(--ms-accent);
+}
+.ms-header .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-remove {
+  color: var(--ms-text-secondary);
+}
+
+.ms-content {
+  background: var(--ms-bg) !important;
+}
+
+/* 侧栏文件树头部：当前文件夹名 + 切换按钮 */
+.ms-filetree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ms-border);
+}
+.ms-filetree-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ms-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-filetree .ant-btn-text {
+  color: var(--ms-text-secondary);
+}
+.ms-filetree .ant-btn-text:hover {
+  color: var(--ms-text);
+}
+
+/* 侧栏标签页：内容区填充高度并滚动 */
+.ms-sidebar {
+  height: 100%;
+}
+.ms-sidebar .ant-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ms-sidebar .ant-tabs-nav {
+  margin: 0;
+}
+.ms-sidebar .ant-tabs-content-holder {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.ms-sidebar .ant-tabs-content,
+.ms-sidebar .ant-tabs-tabpane {
+  height: 100%;
+}
+
+/* 大纲面板 */
+.ms-outline {
+  height: 100%;
+  overflow: auto;
+  padding: 4px 0 8px;
+}
+.ms-outline-item {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ms-text);
+  cursor: pointer;
+  padding-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+.ms-outline-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ms-accent);
+}
+
+/* 标题滚动定位留白 */
+.milkdown .editor h1,
+.milkdown .editor h2,
+.milkdown .editor h3,
+.milkdown .editor h4,
+.milkdown .editor h5,
+.milkdown .editor h6 {
+  scroll-margin-top: 16px;
+}
+
+/* 底部状态栏 */
+.ms-statusbar {
+  height: 28px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border-top: 1px solid var(--ms-border);
+  font-size: 12px;
+  color: var(--ms-text-secondary);
+  background: var(--ms-bg);
+}
+
+/* ==========================================================================
+   暗色主题
+   ========================================================================== */
+
+html[data-theme='dark'] {
+  --ms-bg: #1e1e1e;
+  --ms-sidebar-bg: #252526;
+  --ms-panel-bg: #2a2a2a;
+  --ms-text: #d4d4d4;
+  --ms-text-secondary: #9d9d9d;
+  --ms-heading: #e8e8e8;
+  --ms-border: #3a3a3a;
+  --ms-border-strong: #4a4a4a;
+  --ms-accent: #4c9aff;
+  --ms-accent-hover: #6cb2ff;
+  --ms-code-bg: #2d2d2d;
+  --ms-code-text: #d4d4d4;
+  --ms-blockquote-bg: #2a2a2a;
+  --ms-blockquote-border: #4a4a4a;
+  --ms-blockquote-text: #9d9d9d;
+  --ms-selection: #264f78;
+  --ms-hr: #3a3a3a;
+  --ms-table-border: #4a4a4a;
+  --ms-table-header-bg: #2a2a2a;
+}
+
+html[data-theme='dark'] body {
+  color: var(--ms-text);
+  background: var(--ms-bg);
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  background-clip: content-box;
+}
+html[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+  background-clip: content-box;
+}
+
+html[data-theme='dark'] .ms-outline-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+html[data-theme='dark'] .ms-sider .ant-tree .ant-tree-treenode:hover {
+  background: rgba(255, 255, 255, 0.04);
+}

@@ -12,6 +12,8 @@ export interface EditorProps {
   onChangeDirty: (dirty: boolean) => void
   onModeChange?: (mode: EditorMode) => void
   onOutlineChange?: (outline: OutlineNode[]) => void
+  /** 选中工具条「链接」按钮被点击时回调（宿主据此弹出链接对话框） */
+  onRequestLink?: () => void
 }
 
 export interface EditorHandle {
@@ -21,4 +23,12 @@ export interface EditorHandle {
   getMode(): EditorMode
   setMode(mode: EditorMode): void
   focus(): void
+  /** 滚动到第 index 个标题（wysiwyg 模式有效） */
+  scrollToHeading(index: number): void
+  /** 在当前光标处插入图片（src 为 URL） */
+  insertImage(src: string): void
+  /** 给当前选区加链接（无选区则无操作） */
+  setLink(href: string): void
+  /** 当前是否有文本选区 */
+  hasSelection(): boolean
 }

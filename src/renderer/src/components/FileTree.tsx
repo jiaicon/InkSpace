@@ -9,12 +9,14 @@ interface FileTreeProps {
   workspacePath: string | null
   tree: FileTreeNode[]
   recent: RecentFile[]
+  activePath: string | null
   onOpenWorkspace(): void
   onOpenFile(path: string): void
   onNewFile(dir: string): void
   onRename(path: string): void
   onDelete(path: string): void
   onReveal(path: string): void
+  onClearRecent(): void
 }
 
 function fileMenu(n: FileTreeNode, props: FileTreeProps): MenuProps['items'] {
@@ -29,7 +31,7 @@ function fileMenu(n: FileTreeNode, props: FileTreeProps): MenuProps['items'] {
 }
 
 export function FileTree(props: FileTreeProps) {
-  const { workspacePath, tree, recent, onOpenWorkspace, onOpenFile, onNewFile, onRename, onDelete, onReveal } = props
+  const { workspacePath, tree, recent, activePath, onOpenWorkspace, onOpenFile, onNewFile, onRename, onDelete, onReveal, onClearRecent } = props
 
   const toData = (nodes: FileTreeNode[]): DataNode[] =>
     nodes.map((n) => ({
@@ -55,18 +57,36 @@ export function FileTree(props: FileTreeProps) {
     }))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: 12 }}>
-        <Button block icon={<FolderOpenOutlined />} onClick={onOpenWorkspace}>
-          {workspacePath ? '切换文件夹' : '打开文件夹'}
-        </Button>
+    <div className="ms-filetree" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="ms-filetree-header">
+        {workspacePath ? (
+          <>
+            <span className="ms-filetree-title">{titleFromPath(workspacePath)}</span>
+            <Button
+              type="text"
+              size="small"
+              icon={<FolderOpenOutlined />}
+              title="切换文件夹"
+              onClick={onOpenWorkspace}
+            />
+          </>
+        ) : (
+          <Button type="text" size="small" icon={<FolderOpenOutlined />} onClick={onOpenWorkspace}>
+            打开文件夹
+          </Button>
+        )}
       </div>
 
       {recent.length > 0 && (
         <div style={{ padding: '0 12px 8px' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            最近打开
-          </Typography.Text>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              最近打开
+            </Typography.Text>
+            <Button type="text" size="small" onClick={onClearRecent} style={{ fontSize: 12 }}>
+              清除
+            </Button>
+          </div>
           {recent.slice(0, 5).map((r) => (
             <div key={r.path}>
               <Button
@@ -88,6 +108,7 @@ export function FileTree(props: FileTreeProps) {
             showIcon
             blockNode
             treeData={toData(tree)}
+            selectedKeys={activePath ? [activePath] : []}
             defaultExpandAll
             onSelect={(keys) => {
               const key = keys[0] as string | undefined

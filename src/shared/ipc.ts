@@ -14,6 +14,7 @@ export const IPC = {
   recentList: 'recent:list',
   recentAdd: 'recent:add',
   recentRemove: 'recent:remove',
+  recentClear: 'recent:clear',
   // file 模块
   fileRead: 'file:read',
   fileWrite: 'file:write',

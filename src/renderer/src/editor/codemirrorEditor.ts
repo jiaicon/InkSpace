@@ -8,6 +8,9 @@ export interface SourceEditorAdapter {
   setContent(md: string): void
   focus(): void
   destroy(): void
+  insertImage(src: string): void
+  setLink(href: string): void
+  hasSelection(): boolean
 }
 
 export function createCodeMirrorEditor(
@@ -21,6 +24,7 @@ export function createCodeMirrorEditor(
     doc: initialMarkdown,
     extensions: [
       lineNumbers(),
+      EditorView.lineWrapping,
       history(),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       markdown(),
@@ -42,6 +46,18 @@ export function createCodeMirrorEditor(
       suppress = false
     },
     focus: () => view.focus(),
-    destroy: () => view.destroy()
+    destroy: () => view.destroy(),
+    insertImage: (src) => {
+      const { from, to } = view.state.selection.main
+      view.dispatch({ changes: { from, to, insert: `![](${src})` } })
+      view.focus()
+    },
+    setLink: (href) => {
+      const { from, to } = view.state.selection.main
+      const text = view.state.doc.sliceString(from, to)
+      view.dispatch({ changes: { from, to, insert: `[${text}](${href})` } })
+      view.focus()
+    },
+    hasSelection: () => !view.state.selection.main.empty
   }
 }

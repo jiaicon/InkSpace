@@ -12,7 +12,8 @@ const SQL = {
                  VALUES (@path, @title, @lastOpenedAt)
                  ON CONFLICT(path) DO UPDATE
                  SET title = excluded.title, last_opened_at = excluded.last_opened_at`,
-  deleteRecent: `DELETE FROM recent_files WHERE path = ?`
+  deleteRecent: `DELETE FROM recent_files WHERE path = ?`,
+  clearRecent: `DELETE FROM recent_files`
 }
 
 /** 数据访问层：settings KV + recent_files，不含业务规则 */
@@ -33,6 +34,9 @@ export function createWorkspaceRepository(db: Database.Database) {
     },
     deleteRecent(path: string): void {
       db.prepare(SQL.deleteRecent).run(path)
+    },
+    clearRecent(): void {
+      db.prepare(SQL.clearRecent).run()
     }
   }
 }

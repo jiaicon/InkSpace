@@ -21,6 +21,7 @@ declare global {
         recentList: () => Promise<IpcResult<RecentFile[]>>
         recentAdd: (path: string, title: string) => Promise<IpcResult<void>>
         recentRemove: (path: string) => Promise<IpcResult<void>>
+        recentClear: () => Promise<IpcResult<void>>
       }
       file: {
         read: (path: string) => Promise<IpcResult<string>>

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"=== test EXIT: $? ===\")",
+      "Bash(git -C /d/mine/electron-app log --oneline -3)",
+      "Bash(git -C /d/mine/electron-app status --short)",
+      "Bash(node \".superpowers/../.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/subagent-driven-development/scripts/review-package\" \"docs/superpowers/plans/2026-09-01-file-layer.md\" eca2d2c 2a2214e)",
+      "Bash(node /c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/subagent-driven-development/scripts/review-package \"docs/superpowers/plans/2026-09-01-file-layer.md\" eca2d2c 2a2214e)",
+      "Bash(bash /c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/subagent-driven-development/scripts/review-package \"docs/superpowers/plans/2026-09-01-file-layer.md\" eca2d2c 2a2214e)",
+      "Read(//c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/requesting-code-review/**)",
+      "Bash(bash /c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/subagent-driven-development/scripts/review-package \"docs/superpowers/plans/2026-09-01-file-layer.md\" cf424af 2a2214e)",
+      "Bash(bash /c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/subagent-driven-development/scripts/review-package \"docs/superpowers/plans/2026-09-01-file-layer.md\" 2a2214e 6c7b2ce)",
+      "Read(//c/Users/jiaic/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/finishing-a-development-branch/**)",
+      "Bash(xargs grep -ln \"milkdown\")",
+      "Bash(grep -rn '$prose' node_modules/@milkdown/utils/lib/index.js)",
+      "Bash(node -e \"const e=require\\('./node_modules/@milkdown/kit/package.json'\\).exports; for \\(const k of Object.keys\\(e\\)\\) console.log\\(k\\)\")",
+      "Bash(node -e \"const e=require\\('./node_modules/@milkdown/components/package.json'\\).exports; for \\(const k of Object.keys\\(e\\)\\) console.log\\(k\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const e=JSON.parse\\(s\\).exports;for\\(const k of Object.keys\\(e\\)\\)console.log\\(k\\)}\\)\")",
+      "Bash(cat node_modules/@milkdown/utils/lib/composable/\\\\$command.d.ts 2>&1; echo \"===ctx index.d.ts \\(commands\\)===\"; grep -rn \"commandsCtx\\\\|CmdKey\\\\|CommandsCtx\" node_modules/@milkdown/ctx/lib/*.d.ts 2>&1 | head -40)",
+      "Read(//d/mine/electron-app/node_modules/@milkdown/utils/lib/composable/**)",
+      "Bash(node -e \"const e=require\\('./node_modules/@milkdown/preset-gfm/package.json'\\).exports; console.log\\(JSON.stringify\\(e,null,1\\)\\)\")",
+      "Bash(node -e \"console.log\\('antd', require\\('./node_modules/antd/package.json'\\).version\\)\")",
+      "Bash(node -e \"const s=require\\('./node_modules/antd/es/theme/themes/seed'\\).default; console.log\\(Object.keys\\(s\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e \"const s=require\\('./node_modules/antd/es/theme/themes/seed'\\).default; console.log\\('colorBgBase=',s.colorBgBase,'colorTextBase=',s.colorTextBase,'colorPrimary=',s.colorPrimary,'colorBorder?=',s.colorBorder\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(xargs grep -l \"Command\")",
+      "Bash(grep -rn '$command\\\\|findWrapping' node_modules/@milkdown/kit/lib/utils.d.ts)",
+      "Bash(grep -n \"listItemSchema = \\\\$\\\\|attrs: {\\\\|label: {\\\\|listType: {\\\\|spread: {\\\\|loose: {\\\\|checked: {\\\\|default:\" node_modules/@milkdown/preset-commonmark/lib/index.js)",
+      "Bash(node -e \"console.log\\(require.resolve\\('@milkdown/prose/tables'\\)\\)\")",
+      "Bash(node -e \"console.log\\(require.resolve\\('@milkdown/kit/prose/tables'\\)\\)\")"
+    ]
+  }
+}

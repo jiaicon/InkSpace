@@ -1,7 +1,7 @@
 {
-  "name": "electron-app",
+  "name": "inkspace",
   "version": "1.0.0",
-  "description": "Enterprise Electron desktop app (React + antd + SQLite)",
+  "description": "墨境 InkSpace —— AI 原生 Markdown 编辑器",
   "main": "./out/main/index.js",
   "author": "jiaicon <jiaicon@163.com>",
   "private": true,

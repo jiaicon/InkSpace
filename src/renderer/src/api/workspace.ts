@@ -8,5 +8,6 @@ export const workspaceApi = {
   tree: (root: string) => unwrap<FileTreeNode[]>(window.api.workspace.tree(root)),
   recentList: () => unwrap<RecentFile[]>(window.api.workspace.recentList()),
   recentAdd: (path: string, title: string) => unwrap<void>(window.api.workspace.recentAdd(path, title)),
-  recentRemove: (path: string) => unwrap<void>(window.api.workspace.recentRemove(path))
+  recentRemove: (path: string) => unwrap<void>(window.api.workspace.recentRemove(path)),
+  recentClear: () => unwrap<void>(window.api.workspace.recentClear())
 }
