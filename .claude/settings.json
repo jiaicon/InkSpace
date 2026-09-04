@@ -52,7 +52,9 @@
       "Bash(cat \"node_modules/@milkdown/utils/src/composable/composed/\\\\$mark-schema.ts\")",
       "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/composed/**)",
       "Bash(cat \"node_modules/@milkdown/utils/src/composable/\\\\$mark.ts\" 2>/dev/null | head -80)",
-      "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/**)"
+      "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/**)",
+      "WebSearch",
+      "WebFetch(domain:www.e-com-net.com)"
     ]
   }
 }

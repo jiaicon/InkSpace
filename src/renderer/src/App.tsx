@@ -284,6 +284,54 @@ export default function App() {
     }
   }, [openFile])
 
+  // 外部打开：右键 md「打开方式」唤起（首启走拉取，运行中走 second-instance 推送）
+  useEffect(() => {
+    fileApi.onOpenExternal((path) => {
+      void openFile(path)
+    })
+    void fileApi.pendingOpen().then((path) => {
+      if (path) void openFile(path)
+    })
+  }, [openFile])
+
+  // 拖拽打开：仅接受 .md/.markdown 文件（捕获阶段拦截，避免落到编辑器被当作内容插入）
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    const onDrop = (e: DragEvent) => {
+      console.log(
+        '[drop] 收到拖拽, types =',
+        e.dataTransfer ? Array.from(e.dataTransfer.types) : null
+      )
+      const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : []
+      if (files.length === 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      const paths: string[] = []
+      for (const f of files) {
+        const p = fileApi.getPathForFile(f)
+        console.log('[drop] file =', f.name, '| path =', JSON.stringify(p))
+        const lower = p.toLowerCase()
+        if (lower.endsWith('.md') || lower.endsWith('.markdown')) paths.push(p)
+      }
+      if (paths.length === 0) {
+        message.info('仅支持拖入 .md / .markdown 文件')
+        return
+      }
+      for (const p of paths) void openFile(p)
+    }
+    window.addEventListener('dragover', onDragOver, true)
+    window.addEventListener('drop', onDrop, true)
+    return () => {
+      window.removeEventListener('dragover', onDragOver, true)
+      window.removeEventListener('drop', onDrop, true)
+    }
+  }, [openFile])
+
   const openWorkspace = useCallback(async () => {
     try {
       const info = await workspaceApi.pick()

@@ -39,6 +39,9 @@ declare global {
         remove: (path: string) => Promise<IpcResult<void>>
         reveal: (path: string) => Promise<IpcResult<void>>
         pick: () => Promise<IpcResult<string | null>>
+        pendingOpen: () => Promise<IpcResult<string | null>>
+        onOpenExternal: (cb: (path: string) => void) => void
+        getPathForFile: (file: File) => string
       }
     }
   }

@@ -22,5 +22,8 @@ export const IPC = {
   fileRename: 'file:rename',
   fileDelete: 'file:delete',
   fileReveal: 'file:reveal',
-  filePick: 'file:pick'
+  filePick: 'file:pick',
+  // 外部打开（右键 md「打开方式」）
+  filePendingOpen: 'file:pending-open',
+  fileOpenExternal: 'file:open-external'
 } as const

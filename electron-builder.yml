@@ -3,6 +3,15 @@ productName: InkSpace
 directories:
   output: release
   buildResources: build
+fileAssociations:
+  - ext: md
+    name: Markdown Document
+    description: Markdown 文档
+    role: Editor
+  - ext: markdown
+    name: Markdown Document
+    description: Markdown 文档
+    role: Editor
 files:
   - out/**
 asarUnpack:
@@ -12,6 +21,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  include: installer.nsh
 mac:
   target: [dmg]
 linux:

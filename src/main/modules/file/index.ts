@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { IPC } from '@shared/ipc'
 import { handle } from '../../ipc/util'
 import { createFileService } from './service'
+import { getPendingOpenPath } from './external'
 
 /** 注册 file 模块的 IPC handler（另存对话框、读写、重命名、删除、显示） */
 export function registerFileIpc(): void {
@@ -46,4 +47,7 @@ export function registerFileIpc(): void {
   })
 
   handle(IPC.fileReveal, (path) => shell.showItemInFolder(path as string))
+
+  // 外部打开：返回启动/唤起时待打开的 md 文件路径
+  handle(IPC.filePendingOpen, () => getPendingOpenPath())
 }
