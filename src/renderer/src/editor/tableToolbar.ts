@@ -7,7 +7,8 @@ import {
   selectRowCommand,
   selectColCommand,
   selectTableCommand,
-  deleteSelectedCellsCommand
+  deleteSelectedCellsCommand,
+  getCellsInCol
 } from '@milkdown/kit/preset/gfm'
 import { isInTable, selectedRect } from '@milkdown/kit/prose/tables'
 import { $prose } from '@milkdown/kit/utils'
@@ -15,11 +16,45 @@ import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import type { Ctx } from '@milkdown/kit/ctx'
 
+type TableAlign = 'left' | 'center' | 'right'
+
+const ALIGNS: { value: TableAlign; title: string; label: string }[] = [
+  { value: 'left', title: '左对齐', label: '靠左' },
+  { value: 'center', title: '居中对齐', label: '居中' },
+  { value: 'right', title: '右对齐', label: '靠右' }
+]
+
 interface TableButton {
   title: string
   label: string
   run: () => void
   danger?: boolean
+}
+
+/** 把光标所在列的整列（表头 + 所有单元格）设为指定对齐方式 */
+function alignColumn(view: EditorView, alignment: TableAlign): void {
+  const { state } = view
+  if (!isInTable(state)) return
+  const rect = selectedRect(state)
+  const cells = getCellsInCol(rect.left, state.selection)
+  if (!cells?.length) return
+  const tr = state.tr
+  for (const cell of cells) {
+    if (cell.node.attrs.alignment !== alignment) {
+      tr.setNodeMarkup(cell.pos, null, { ...cell.node.attrs, alignment })
+    }
+  }
+  if (tr.steps.length) view.dispatch(tr)
+  view.focus()
+}
+
+/** 读取光标所在列当前的对齐方式（用于高亮激活按钮） */
+function currentAlign(view: EditorView): TableAlign | null {
+  const { state } = view
+  if (!isInTable(state)) return null
+  const rect = selectedRect(state)
+  const cell = getCellsInCol(rect.left, state.selection)?.[0]
+  return (cell?.node.attrs.alignment as TableAlign) ?? null
 }
 
 function createButtons(ctx: Ctx): TableButton[] {
@@ -56,7 +91,8 @@ function createButtons(ctx: Ctx): TableButton[] {
 }
 
 /**
- * 表格工具条：光标位于表格内时浮出，提供增删行/列、删除表格。
+ * 表格工具条：光标位于表格内时浮出。
+ * 左侧为「对齐方式」（按列整列对齐），右侧为增删行/列、删除表格等操作。
  * 与 selectionToolbar 同构的 vanilla-DOM 插件，点击用 mousedown.preventDefault
  * 保持编辑器焦点，再执行对应表格命令。
  */
@@ -67,6 +103,27 @@ export const tableToolbar = $prose((ctx) => {
 
   let view: EditorView | null = null
 
+  // 左组：对齐方式
+  const alignGroup = document.createElement('div')
+  alignGroup.className = 'ms-table-align-group'
+  const alignBtns: HTMLButtonElement[] = []
+  for (const a of ALIGNS) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'ms-table-btn ms-table-align-btn'
+    btn.dataset.align = a.value
+    btn.textContent = a.label
+    btn.title = a.title
+    btn.addEventListener('mousedown', (e) => e.preventDefault())
+    btn.addEventListener('click', () => alignColumn(ctx.get(editorViewCtx), a.value))
+    alignGroup.appendChild(btn)
+    alignBtns.push(btn)
+  }
+  bar.appendChild(alignGroup)
+
+  // 右组：增删行/列、删除表格
+  const opGroup = document.createElement('div')
+  opGroup.className = 'ms-table-op-group'
   createButtons(ctx).forEach((b) => {
     const btn = document.createElement('button')
     btn.type = 'button'
@@ -78,8 +135,16 @@ export const tableToolbar = $prose((ctx) => {
       b.run()
       view?.focus()
     })
-    bar.appendChild(btn)
+    opGroup.appendChild(btn)
   })
+  bar.appendChild(opGroup)
+
+  const refreshActive = (v: EditorView) => {
+    const align = currentAlign(v)
+    for (const btn of alignBtns) {
+      btn.classList.toggle('is-active', btn.dataset.align === align)
+    }
+  }
 
   const show = (v: EditorView) => {
     let rect
@@ -99,6 +164,7 @@ export const tableToolbar = $prose((ctx) => {
     }
     bar.setAttribute('data-show', 'true')
     if (!bar.parentElement) document.body.appendChild(bar)
+    refreshActive(v)
   }
   const hide = () => bar.setAttribute('data-show', 'false')
   const onScroll = () => hide()

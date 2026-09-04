@@ -11,6 +11,7 @@ interface SidebarProps {
   activePath: string | null
   outline: OutlineNode[]
   onOpenWorkspace(): void
+  onOpenFileDialog(): void
   onOpenFile(path: string): void
   onNewFile(dir: string): void
   onRename(path: string): void
@@ -33,6 +34,7 @@ export function Sidebar(props: SidebarProps) {
           recent={props.recent}
           activePath={props.activePath}
           onOpenWorkspace={props.onOpenWorkspace}
+          onOpenFileDialog={props.onOpenFileDialog}
           onOpenFile={props.onOpenFile}
           onNewFile={props.onNewFile}
           onRename={props.onRename}
@@ -50,7 +52,10 @@ export function Sidebar(props: SidebarProps) {
   ]
 
   return (
-    <div className="ms-sidebar" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div
+      className="ms-sidebar"
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
       <Tabs
         size="small"
         items={items}

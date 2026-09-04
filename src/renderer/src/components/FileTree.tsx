@@ -1,7 +1,7 @@
 import { Button, Dropdown, Tree, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import type { DataNode } from 'antd/es/tree'
-import { FolderOpenOutlined } from '@ant-design/icons'
+import { FolderOpenOutlined, FileTextOutlined } from '@ant-design/icons'
 import type { FileTreeNode, RecentFile } from '@shared/types'
 import { titleFromPath } from '../utils/path'
 
@@ -11,6 +11,7 @@ interface FileTreeProps {
   recent: RecentFile[]
   activePath: string | null
   onOpenWorkspace(): void
+  onOpenFileDialog(): void
   onOpenFile(path: string): void
   onNewFile(dir: string): void
   onRename(path: string): void
@@ -37,6 +38,7 @@ export function FileTree(props: FileTreeProps) {
     recent,
     activePath,
     onOpenWorkspace,
+    onOpenFileDialog,
     onOpenFile,
     onNewFile,
     onRename,
@@ -75,21 +77,26 @@ export function FileTree(props: FileTreeProps) {
     >
       <div className="ms-filetree-header">
         {workspacePath ? (
-          <>
-            <span className="ms-filetree-title">{titleFromPath(workspacePath)}</span>
-            <Button
-              type="text"
-              size="small"
-              icon={<FolderOpenOutlined />}
-              title="切换文件夹"
-              onClick={onOpenWorkspace}
-            />
-          </>
+          <span className="ms-filetree-title">{titleFromPath(workspacePath)}</span>
         ) : (
-          <Button type="text" size="small" icon={<FolderOpenOutlined />} onClick={onOpenWorkspace}>
-            打开文件夹
-          </Button>
+          <span />
         )}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Button
+            type="text"
+            size="small"
+            icon={<FileTextOutlined />}
+            title="打开文件"
+            onClick={onOpenFileDialog}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<FolderOpenOutlined />}
+            title={workspacePath ? '切换文件夹' : '打开文件夹'}
+            onClick={onOpenWorkspace}
+          />
+        </span>
       </div>
 
       {recent.length > 0 && (

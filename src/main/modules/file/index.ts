@@ -22,6 +22,19 @@ export function registerFileIpc(): void {
     return res.filePath
   })
 
+  handle(IPC.filePick, async () => {
+    const res = await dialog.showOpenDialog({
+      title: '打开文件',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Markdown', extensions: ['md', 'markdown'] },
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    })
+    if (res.canceled || res.filePaths.length === 0) return null
+    return res.filePaths[0]
+  })
+
   handle(IPC.fileRename, (path, newName) => svc.rename(path as string, newName as string))
 
   handle(IPC.fileDelete, async (path) => {

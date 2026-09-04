@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ConfigProvider, Input, Layout, Modal, message, theme as antdTheme } from 'antd'
-import type { ThemeConfig } from 'antd'
+import type { InputRef, ThemeConfig } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import { CodeOutlined, EditOutlined, BulbOutlined, PictureOutlined, LinkOutlined, FileAddOutlined, SaveOutlined, ExportOutlined } from '@ant-design/icons'
+import {
+  CodeOutlined,
+  EditOutlined,
+  BulbOutlined,
+  PictureOutlined,
+  LinkOutlined,
+  FileAddOutlined,
+  SaveOutlined,
+  ExportOutlined
+} from '@ant-design/icons'
 import { Editor, parseOutline } from './editor'
 import type { EditorHandle, EditorMode } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
@@ -55,8 +64,21 @@ function getAppTheme(mode: 'light' | 'dark'): ThemeConfig {
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
   const {
-    workspacePath, tree, recent, tabs, activePath, contents,
-    setWorkspace, setTree, setRecent, addTab, activate, removeTab, renameTab, onEdit, markSaved
+    workspacePath,
+    tree,
+    recent,
+    tabs,
+    activePath,
+    contents,
+    setWorkspace,
+    setTree,
+    setRecent,
+    addTab,
+    activate,
+    removeTab,
+    renameTab,
+    onEdit,
+    markSaved
   } = useWorkspaceStore()
 
   const [pendingClose, setPendingClose] = useState<string | null>(null)
@@ -64,11 +86,13 @@ export default function App() {
   const [renameValue, setRenameValue] = useState('')
   const [urlKind, setUrlKind] = useState<'image' | 'link' | null>(null)
   const [urlValue, setUrlValue] = useState('')
+  const urlInputRef = useRef<InputRef>(null)
+  const linkRangeRef = useRef<{ from: number; to: number } | null>(null)
 
   // —— 显示模式（wysiwyg / source）与主题（light / dark） ——
   const [mode, setMode] = useState<EditorMode>('wysiwyg')
-  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
-    (localStorage.getItem('ms-theme') as 'light' | 'dark') ?? 'light'
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    () => (localStorage.getItem('ms-theme') as 'light' | 'dark') ?? 'light'
   )
 
   // —— 大纲与字数统计（随当前文档变化） ——
@@ -143,10 +167,12 @@ export default function App() {
   }, [])
 
   const requestLink = useCallback(() => {
-    if (!editorRef.current?.hasSelection()) {
+    const range = editorRef.current?.getSelection()
+    if (!range) {
       message.info('请先选中要添加链接的文字')
       return
     }
+    linkRangeRef.current = range
     setUrlKind('link')
     setUrlValue('')
   }, [])
@@ -154,10 +180,18 @@ export default function App() {
   const confirmUrl = useCallback(() => {
     const url = urlValue.trim()
     if (!url) return
+    console.log('[confirmUrl] 应用链接/图片', { url, kind: urlKind, range: linkRangeRef.current })
     if (urlKind === 'image') editorRef.current?.insertImage(url)
-    else if (urlKind === 'link') editorRef.current?.setLink(url)
+    else if (urlKind === 'link') editorRef.current?.setLink(url, linkRangeRef.current ?? undefined)
     setUrlKind(null)
   }, [urlKind, urlValue])
+
+  // 弹窗打开后把焦点交给输入框，确保 Enter 触发确认而非被编辑器抢走
+  useEffect(() => {
+    if (!urlKind) return
+    const t = setTimeout(() => urlInputRef.current?.focus(), 0)
+    return () => clearTimeout(t)
+  }, [urlKind])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -181,6 +215,21 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [urlKind, requestLink])
+
+  // 链接/图片弹窗打开时，用捕获阶段拦截 Enter 直接确认：无论焦点在输入框还是编辑器，
+  // 都能阻止 Enter 落到编辑器（否则会把选中文字替换成换行）。
+  useEffect(() => {
+    if (!urlKind) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        confirmUrl()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [urlKind, confirmUrl])
 
   // 编辑器当前显示路径（用 ref 避免 onChange 闭包过期；编辑内容归属当前显示的文档）
   const displayedPathRef = useRef<string | null>(null)
@@ -224,6 +273,16 @@ export default function App() {
     },
     [activate, addTab, setRecent, showFile]
   )
+
+  const openFileDialog = useCallback(async () => {
+    try {
+      const path = await fileApi.pick()
+      if (!path) return
+      await openFile(path)
+    } catch (e) {
+      message.error(`打开文件失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [openFile])
 
   const openWorkspace = useCallback(async () => {
     try {
@@ -344,11 +403,14 @@ export default function App() {
     [removeTab, showFile, doSave]
   )
 
-  const requestClose = useCallback((path: string) => {
-    const tab = useWorkspaceStore.getState().tabs.find((t) => t.path === path)
-    if (tab?.dirty) setPendingClose(path)
-    else void finalizeClose(path, true)
-  }, [finalizeClose])
+  const requestClose = useCallback(
+    (path: string) => {
+      const tab = useWorkspaceStore.getState().tabs.find((t) => t.path === path)
+      if (tab?.dirty) setPendingClose(path)
+      else void finalizeClose(path, true)
+    },
+    [finalizeClose]
+  )
 
   const handleTabChange = useCallback(
     async (path: string) => {
@@ -434,6 +496,7 @@ export default function App() {
             activePath={activePath}
             outline={outline}
             onOpenWorkspace={openWorkspace}
+            onOpenFileDialog={openFileDialog}
             onOpenFile={openFile}
             onNewFile={newFile}
             onRename={requestRename}
@@ -445,15 +508,67 @@ export default function App() {
         </Layout.Sider>
 
         <Layout>
-          <Layout.Header className="ms-header" style={{ padding: '0 8px', height: 40, lineHeight: '40px', display: 'flex', alignItems: 'center' }}>
-            <div style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'center' }}>
-              <TabBar tabs={tabs} activePath={activePath} onChange={handleTabChange} onClose={requestClose} />
+          <Layout.Header
+            className="ms-header"
+            style={{
+              padding: '0 8px',
+              height: 40,
+              lineHeight: '40px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <TabBar
+                tabs={tabs}
+                activePath={activePath}
+                onChange={handleTabChange}
+                onClose={requestClose}
+              />
             </div>
-            <Button type="text" size="small" icon={<FileAddOutlined />} title="新建文件" onClick={() => newFile()} />
-            <Button type="text" size="small" icon={<SaveOutlined />} title="保存 (Ctrl+S)" onClick={handleSave} />
-            <Button type="text" size="small" icon={<ExportOutlined />} title="另存为" onClick={saveAs} />
-            <Button type="text" size="small" icon={<PictureOutlined />} title="插入图片" onClick={requestImage} />
-            <Button type="text" size="small" icon={<LinkOutlined />} title="插入链接 (Ctrl+K)" onClick={requestLink} />
+            <Button
+              type="text"
+              size="small"
+              icon={<FileAddOutlined />}
+              title="新建文件"
+              onClick={() => newFile()}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<SaveOutlined />}
+              title="保存 (Ctrl+S)"
+              onClick={handleSave}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<ExportOutlined />}
+              title="另存为"
+              onClick={saveAs}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<PictureOutlined />}
+              title="插入图片"
+              onClick={requestImage}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<LinkOutlined />}
+              title="插入链接 (Ctrl+K)"
+              onClick={requestLink}
+            />
             <Button
               type="text"
               size="small"
@@ -461,10 +576,19 @@ export default function App() {
               title={mode === 'wysiwyg' ? '源码模式 (Ctrl+/)' : '所见即所得 (Ctrl+/)'}
               onClick={toggleMode}
             />
-            <Button type="text" size="small" icon={<BulbOutlined />} title="切换主题" onClick={toggleTheme} />
+            <Button
+              type="text"
+              size="small"
+              icon={<BulbOutlined />}
+              title="切换主题"
+              onClick={toggleTheme}
+            />
           </Layout.Header>
 
-          <Layout.Content className="ms-content" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Layout.Content
+            className="ms-content"
+            style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               {hasTabs && activePath ? (
                 <Editor
@@ -479,6 +603,7 @@ export default function App() {
                 <Welcome
                   recent={recent.map((r) => r.path)}
                   onOpenWorkspace={openWorkspace}
+                  onOpenFileDialog={openFileDialog}
                   onNewFile={() => newFile()}
                   onOpenRecent={openFile}
                 />
@@ -488,7 +613,9 @@ export default function App() {
               <span>字数 {stats.words}</span>
               <span>字符 {stats.chars}</span>
               <span>行 {stats.lines}</span>
-              <span style={{ marginLeft: 'auto' }}>{mode === 'wysiwyg' ? '所见即所得' : '源码模式'}</span>
+              <span style={{ marginLeft: 'auto' }}>
+                {mode === 'wysiwyg' ? '所见即所得' : '源码模式'}
+              </span>
             </div>
           </Layout.Content>
         </Layout>
@@ -552,9 +679,9 @@ export default function App() {
         okButtonProps={{ disabled: !urlValue.trim() }}
       >
         <Input
+          ref={urlInputRef}
           value={urlValue}
           onChange={(e) => setUrlValue(e.target.value)}
-          onPressEnter={confirmUrl}
           placeholder={urlKind === 'image' ? '图片地址（https://…）' : '链接地址（https://…）'}
           autoFocus
         />

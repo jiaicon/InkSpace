@@ -9,8 +9,8 @@ export interface SourceEditorAdapter {
   focus(): void
   destroy(): void
   insertImage(src: string): void
-  setLink(href: string): void
-  hasSelection(): boolean
+  setLink(href: string, range?: { from: number; to: number }): void
+  getSelection(): { from: number; to: number } | null
 }
 
 export function createCodeMirrorEditor(
@@ -52,12 +52,16 @@ export function createCodeMirrorEditor(
       view.dispatch({ changes: { from, to, insert: `![](${src})` } })
       view.focus()
     },
-    setLink: (href) => {
-      const { from, to } = view.state.selection.main
+    setLink: (href, range) => {
+      const from = range ? range.from : view.state.selection.main.from
+      const to = range ? range.to : view.state.selection.main.to
       const text = view.state.doc.sliceString(from, to)
       view.dispatch({ changes: { from, to, insert: `[${text}](${href})` } })
       view.focus()
     },
-    hasSelection: () => !view.state.selection.main.empty
+    getSelection: () => {
+      const { from, to } = view.state.selection.main
+      return from === to ? null : { from, to }
+    }
   }
 }

@@ -6,7 +6,7 @@ import { listener, listenerCtx } from '@milkdown/kit/plugin/listener'
 import { clipboard } from '@milkdown/kit/plugin/clipboard'
 import { trailing } from '@milkdown/kit/plugin/trailing'
 import { $prose, replaceAll } from '@milkdown/kit/utils'
-import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
+import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import { slashMenu } from './slashMenu'
 import { selectionToolbar } from './selectionToolbar'
@@ -18,8 +18,8 @@ export interface MarkdownEditorAdapter {
   focus(): void
   destroy(): void
   insertImage(src: string): void
-  setLink(href: string): void
-  hasSelection(): boolean
+  setLink(href: string, range?: { from: number; to: number }): void
+  getSelection(): { from: number; to: number } | null
 }
 
 // 空文档占位提示
@@ -88,17 +88,30 @@ export async function createMilkdownEditor(
         ctx.get(commandsCtx).call(insertImageCommand.key, { src })
         ctx.get(editorViewCtx).focus()
       }),
-    setLink: (href) =>
+    setLink: (href, range) =>
       editor.action((ctx) => {
-        ctx.get(commandsCtx).call(toggleLinkCommand.key, { href })
-        ctx.get(editorViewCtx).focus()
+        try {
+          const view = ctx.get(editorViewCtx)
+          // 弹窗打开期间编辑器失焦，实时选区已丢失；用请求时保存的 range 恢复选区，
+          // 再走 toggleLinkCommand（与加粗/斜体同一套命令分发路径，最稳）。
+          if (range && range.from !== range.to) {
+            view.dispatch(
+              view.state.tr.setSelection(TextSelection.create(view.state.doc, range.from, range.to))
+            )
+          }
+          ctx.get(commandsCtx).call(toggleLinkCommand.key, { href })
+          view.focus()
+        } catch (err) {
+          console.error('[setLink] 加链接失败：', err, { href, range })
+        }
       }),
-    hasSelection: () => {
-      let has = false
+    getSelection: () => {
+      let range: { from: number; to: number } | null = null
       editor.action((ctx) => {
-        has = !ctx.get(editorViewCtx).state.selection.empty
+        const s = ctx.get(editorViewCtx).state.selection
+        if (!s.empty) range = { from: s.from, to: s.to }
       })
-      return has
+      return range
     }
   }
 }

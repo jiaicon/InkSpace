@@ -1,20 +1,32 @@
 import { Button, Empty, Space, Typography } from 'antd'
-import { FolderOpenOutlined, FileAddOutlined } from '@ant-design/icons'
+import { FileTextOutlined, FolderOpenOutlined, FileAddOutlined } from '@ant-design/icons'
 import { titleFromPath } from '../utils/path'
 
 interface WelcomeProps {
   recent: string[]
   onOpenWorkspace(): void
+  onOpenFileDialog(): void
   onNewFile(): void
   onOpenRecent(path: string): void
 }
 
-export function Welcome({ recent, onOpenWorkspace, onNewFile, onOpenRecent }: WelcomeProps) {
+export function Welcome({
+  recent,
+  onOpenWorkspace,
+  onOpenFileDialog,
+  onNewFile,
+  onOpenRecent
+}: WelcomeProps) {
   return (
-    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div
+      style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
       <Empty description="打开一个文件夹或文件开始写作">
         <Space direction="vertical" style={{ width: 320 }}>
-          <Button type="primary" block icon={<FolderOpenOutlined />} onClick={onOpenWorkspace}>
+          <Button type="primary" block icon={<FileTextOutlined />} onClick={onOpenFileDialog}>
+            打开文件
+          </Button>
+          <Button block icon={<FolderOpenOutlined />} onClick={onOpenWorkspace}>
             打开文件夹
           </Button>
           <Button block icon={<FileAddOutlined />} onClick={onNewFile}>

@@ -1,6 +1,14 @@
 /// <reference types="vite/client" />
 
-import type { User, UserInput, SystemInfo, IpcResult, FileTreeNode, RecentFile, WorkspaceInfo } from '@shared/types'
+import type {
+  User,
+  UserInput,
+  SystemInfo,
+  IpcResult,
+  FileTreeNode,
+  RecentFile,
+  WorkspaceInfo
+} from '@shared/types'
 
 declare global {
   interface Window {
@@ -30,6 +38,7 @@ declare global {
         rename: (path: string, newName: string) => Promise<IpcResult<string>>
         remove: (path: string) => Promise<IpcResult<void>>
         reveal: (path: string) => Promise<IpcResult<void>>
+        pick: () => Promise<IpcResult<string | null>>
       }
     }
   }

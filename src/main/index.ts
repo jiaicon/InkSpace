@@ -28,11 +28,21 @@ function createWindow(): void {
 
   win.on('ready-to-show', () => win.show())
 
+  // 开发态：把渲染进程 console 转发到主进程终端，方便排查渲染层报错
+  if (!app.isPackaged) {
+    win.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+      console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`)
+    })
+  }
+
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // 开发态自动打开 DevTools，便于直接查看控制台
+  if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' })
 }
 
 app.whenReady().then(() => {

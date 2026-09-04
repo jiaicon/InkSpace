@@ -8,5 +8,6 @@ export const fileApi = {
     unwrap<string | null>(window.api.file.create(suggestDir, content)),
   rename: (path: string, newName: string) => unwrap<string>(window.api.file.rename(path, newName)),
   remove: (path: string) => unwrap<void>(window.api.file.remove(path)),
-  reveal: (path: string) => unwrap<void>(window.api.file.reveal(path))
+  reveal: (path: string) => unwrap<void>(window.api.file.reveal(path)),
+  pick: () => unwrap<string | null>(window.api.file.pick())
 }

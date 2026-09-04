@@ -21,5 +21,6 @@ export const IPC = {
   fileCreate: 'file:create',
   fileRename: 'file:rename',
   fileDelete: 'file:delete',
-  fileReveal: 'file:reveal'
+  fileReveal: 'file:reveal',
+  filePick: 'file:pick'
 } as const

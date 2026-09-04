@@ -45,7 +45,14 @@
       "Bash(node -e \"console.log\\(require\\('electron-builder/package.json'\\).version\\)\")",
       "Bash(grep -rn \"defaultFiles\\\\|files: \\\\[\\\\\"\\\\*\\\\*/\\\\*\\\\\"\\\\]\\\\|node_modules\" node_modules/app-builder-lib/out/fileMatcher.js)",
       "Bash(node -e \"const b=require\\('fs'\\).readFileSync\\('build/icon.png'\\); const sig=b.subarray\\(0,8\\).toString\\('hex'\\); const w=b.readUInt32BE\\(16\\), h=b.readUInt32BE\\(20\\); const depth=b[24], ctype=b[25]; console.log\\('signature:', sig\\); console.log\\('dimensions:', w+'x'+h\\); console.log\\('bit depth:', depth, 'color type:', ctype\\);\")",
-      "Bash(pnpm package *)"
+      "Bash(pnpm package *)",
+      "Bash(grep -rn 'class $markSchema\\\\|$markSchema =\\\\|type\\(ctx\\)\\\\|\\\\.type = \\\\|\\\\.type\\(ctx\\)' node_modules/@milkdown/transformer/lib/index.js)",
+      "Bash(grep -rln 'class $MarkSchema\\\\|$MarkSchema =\\\\|$markSchema =\\\\|markSchema =' node_modules/@milkdown/)",
+      "Bash(grep -rn '$markSchema\\\\|class $MarkSchema' node_modules/@milkdown/transformer/lib/index.js)",
+      "Bash(cat \"node_modules/@milkdown/utils/src/composable/composed/\\\\$mark-schema.ts\")",
+      "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/composed/**)",
+      "Bash(cat \"node_modules/@milkdown/utils/src/composable/\\\\$mark.ts\" 2>/dev/null | head -80)",
+      "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/**)"
     ]
   }
 }

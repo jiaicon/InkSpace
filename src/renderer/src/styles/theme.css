@@ -26,10 +26,11 @@
   --ms-table-header-bg: #f6f8fa;
 
   /* 字体 */
-  --ms-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
-    Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
-  --ms-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-    'Liberation Mono', monospace;
+  --ms-font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  --ms-font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
 /* ---------- 基础 ---------- */
@@ -400,6 +401,22 @@ body {
 }
 .ms-table-btn.is-danger {
   color: #d4380d;
+}
+.ms-table-align-group {
+  display: flex;
+  gap: 2px;
+  padding-right: 6px;
+  margin-right: 4px;
+  border-right: 1px solid var(--ms-border);
+}
+.ms-table-op-group {
+  display: flex;
+  gap: 2px;
+}
+.ms-table-btn.is-active {
+  background: var(--ms-panel-bg);
+  color: var(--ms-accent);
+  font-weight: 600;
 }
 
 /* 强调 / 删除线 */

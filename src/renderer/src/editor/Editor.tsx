@@ -93,8 +93,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
       heads?.[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     },
     insertImage: (src) => adapterRef.current?.insertImage(src),
-    setLink: (href) => adapterRef.current?.setLink(href),
-    hasSelection: () => adapterRef.current?.hasSelection() ?? false
+    setLink: (href, range) => adapterRef.current?.setLink(href, range),
+    getSelection: () => adapterRef.current?.getSelection() ?? null
   }))
 
   // 有意只挂载一次：mount/emitOutline 仅依赖 ref，闭包不会过期；
