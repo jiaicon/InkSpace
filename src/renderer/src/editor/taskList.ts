@@ -2,7 +2,7 @@ import { $command } from '@milkdown/kit/utils'
 import { findWrapping } from '@milkdown/kit/prose/transform'
 
 /**
- * 将当前块包裹为任务列表项（checked=true）。
+ * 将当前块包裹为任务列表项（默认未完成，checked=false）。
  * GFM 预设只导出了输入规则（`- [ ] `）而未导出命令，这里基于 findWrapping 自建：
  * 先按无序列表找包裹方案，再为每个 list_item 注入 checked 属性。
  */
@@ -19,7 +19,7 @@ export const wrapInTaskListCommand = $command('WrapInTaskList', () => () => (sta
 
   const taskWrapping = wrapping.map((w) =>
     w.type === listItem
-      ? { type: w.type, attrs: { label: '•', listType: 'bullet', spread: true, checked: true } }
+      ? { type: w.type, attrs: { label: '•', listType: 'bullet', spread: true, checked: false } }
       : w
   )
 

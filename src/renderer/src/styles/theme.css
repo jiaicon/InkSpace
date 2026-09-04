@@ -179,6 +179,7 @@ body {
   border: 1px solid var(--ms-table-border);
   border-radius: 4px;
   background: #fff;
+  cursor: pointer;
 }
 .milkdown .editor li[data-item-type='task'][data-checked='true'] {
   color: var(--ms-text-secondary);

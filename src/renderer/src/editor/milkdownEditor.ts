@@ -12,6 +12,7 @@ import { slashMenu } from './slashMenu'
 import { selectionToolbar } from './selectionToolbar'
 import { tableToolbar } from './tableToolbar'
 import { wrapInTaskListCommand } from './taskList'
+import { taskListToggle } from './taskListToggle'
 
 export interface MarkdownEditorAdapter {
   setContent(md: string): void
@@ -73,6 +74,7 @@ export async function createMilkdownEditor(
     .use(tableToolbar)
     .use(columnResizingPlugin)
     .use(wrapInTaskListCommand)
+    .use(taskListToggle)
     .create()
 
   editor.action((ctx) => {
