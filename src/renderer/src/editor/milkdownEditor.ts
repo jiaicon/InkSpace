@@ -13,6 +13,7 @@ import { selectionToolbar } from './selectionToolbar'
 import { tableToolbar } from './tableToolbar'
 import { wrapInTaskListCommand } from './taskList'
 import { taskListToggle } from './taskListToggle'
+import { imageView, setImageDocDir } from './imageView'
 
 export interface MarkdownEditorAdapter {
   setContent(md: string): void
@@ -21,6 +22,8 @@ export interface MarkdownEditorAdapter {
   insertImage(src: string): void
   setLink(href: string, range?: { from: number; to: number }): void
   getSelection(): { from: number; to: number } | null
+  /** 告知当前文档所在目录，用于解析文档里的相对图片路径 */
+  setDocDir(dir: string | null): void
 }
 
 // 空文档占位提示
@@ -75,6 +78,7 @@ export async function createMilkdownEditor(
     .use(columnResizingPlugin)
     .use(wrapInTaskListCommand)
     .use(taskListToggle)
+    .use(imageView)
     .create()
 
   editor.action((ctx) => {
@@ -114,6 +118,7 @@ export async function createMilkdownEditor(
         if (!s.empty) range = { from: s.from, to: s.to }
       })
       return range
-    }
+    },
+    setDocDir: (dir) => setImageDocDir(dir)
   }
 }

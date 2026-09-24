@@ -3,13 +3,17 @@ import { userApi } from './apis/user'
 import { systemApi } from './apis/system'
 import { workspaceApi } from './apis/workspace'
 import { fileApi } from './apis/file'
+import { exportApi } from './apis/export'
+import { settingsApi } from './apis/settings'
 
 // 聚合所有模块的 api，一次性通过 contextBridge 暴露为 window.api。
 const api = {
   user: userApi,
   system: systemApi,
   workspace: workspaceApi,
-  file: fileApi
+  file: fileApi,
+  export: exportApi,
+  settings: settingsApi
 }
 
 contextBridge.exposeInMainWorld('api', api)

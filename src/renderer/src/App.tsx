@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, ConfigProvider, Input, Layout, Modal, message, theme as antdTheme } from 'antd'
+import {
+  Button,
+  ConfigProvider,
+  Dropdown,
+  Input,
+  Layout,
+  Modal,
+  message,
+  theme as antdTheme
+} from 'antd'
 import type { InputRef, ThemeConfig } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import {
@@ -10,17 +19,27 @@ import {
   LinkOutlined,
   FileAddOutlined,
   SaveOutlined,
-  ExportOutlined
+  ExportOutlined,
+  DownloadOutlined,
+  FileTextOutlined,
+  FilePdfOutlined,
+  SettingOutlined
 } from '@ant-design/icons'
+import type { AppSettings, ThemeMode } from '@shared/types'
 import { Editor, parseOutline } from './editor'
 import type { EditorHandle, EditorMode } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
 import { titleFromPath, dirname } from './utils/path'
+import { classifyDroppedPaths } from './utils/drop'
+import { extFromImageFile } from './utils/image'
 import { workspaceApi } from './api/workspace'
 import { fileApi } from './api/file'
+import { exportApi } from './api/export'
+import { settingsApi } from './api/settings'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { Welcome } from './components/Welcome'
+import { SettingsDrawer } from './components/SettingsDrawer'
 import { debounce } from './utils/debounce'
 import { countStats } from './utils/stats'
 
@@ -91,9 +110,12 @@ export default function App() {
 
   // —— 显示模式（wysiwyg / source）与主题（light / dark） ——
   const [mode, setMode] = useState<EditorMode>('wysiwyg')
-  const [theme, setTheme] = useState<'light' | 'dark'>(
-    () => (localStorage.getItem('ms-theme') as 'light' | 'dark') ?? 'light'
+  // 主题：settings 表是权威来源；localStorage 只作首帧缓存，避免启动时浅色闪一下再变深色
+  const [theme, setTheme] = useState<ThemeMode>(() =>
+    localStorage.getItem('ms-theme') === 'dark' ? 'dark' : 'light'
   )
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // —— 大纲与字数统计（随当前文档变化） ——
   const currentMd = contents[activePath ?? ''] ?? ''
@@ -145,11 +167,34 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', h)
   }, [])
 
-  // —— 主题应用到 <html data-theme> 并持久化 ——
+  // —— 设置加载：主题、图片存放位置 ——
+  useEffect(() => {
+    settingsApi
+      .get()
+      .then((s) => {
+        setAppSettings(s)
+        setTheme(s.theme)
+      })
+      .catch(() => {
+        // 读设置失败不阻塞使用，沿用本地缓存的主题
+      })
+  }, [])
+
+  // —— 主题应用到 <html data-theme> 并写入首帧缓存 ——
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('ms-theme', theme)
   }, [theme])
+
+  const updateSetting = useCallback(async (key: keyof AppSettings, value: string) => {
+    try {
+      const next = await settingsApi.set(key, value)
+      setAppSettings(next)
+      setTheme(next.theme)
+    } catch (e) {
+      message.error(`设置保存失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [])
 
   // —— 源码模式切换（工具栏按钮与 Ctrl+/ 共用） ——
   const toggleMode = useCallback(() => {
@@ -157,8 +202,8 @@ export default function App() {
   }, [mode])
 
   const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === 'light' ? 'dark' : 'light'))
-  }, [])
+    void updateSetting('theme', theme === 'light' ? 'dark' : 'light')
+  }, [theme, updateSetting])
 
   // —— 图片 / 链接插入 ——
   const requestImage = useCallback(() => {
@@ -294,7 +339,29 @@ export default function App() {
     })
   }, [openFile])
 
-  // 拖拽打开：仅接受 .md/.markdown 文件（捕获阶段拦截，避免落到编辑器被当作内容插入）
+  // —— 粘贴 / 拖入的图片：存到文档旁的 assets/，再在光标处插入相对路径 ——
+  const insertImages = useCallback(async (files: File[]) => {
+    const docPath = useWorkspaceStore.getState().activePath
+    if (!docPath) {
+      message.info('请先保存文档，再插入本地图片')
+      return
+    }
+    for (const file of files) {
+      const ext = extFromImageFile(file.name, file.type)
+      if (!ext) {
+        message.warning(`不支持的图片格式：${file.name || file.type || '未知'}`)
+        continue
+      }
+      try {
+        const data = new Uint8Array(await file.arrayBuffer())
+        editorRef.current?.insertImage(await fileApi.saveImage(docPath, data, ext))
+      } catch (e) {
+        message.error(`图片保存失败：${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+  }, [])
+
+  // 拖拽：Markdown 走「打开文件」，图片走「插入」，两者互斥，避免抢同一个落点
   useEffect(() => {
     const onDragOver = (e: DragEvent) => {
       if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
@@ -303,26 +370,24 @@ export default function App() {
       }
     }
     const onDrop = (e: DragEvent) => {
-      console.log(
-        '[drop] 收到拖拽, types =',
-        e.dataTransfer ? Array.from(e.dataTransfer.types) : null
-      )
       const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : []
       if (files.length === 0) return
       e.preventDefault()
       e.stopPropagation()
-      const paths: string[] = []
-      for (const f of files) {
-        const p = fileApi.getPathForFile(f)
-        console.log('[drop] file =', f.name, '| path =', JSON.stringify(p))
-        const lower = p.toLowerCase()
-        if (lower.endsWith('.md') || lower.endsWith('.markdown')) paths.push(p)
-      }
-      if (paths.length === 0) {
-        message.info('仅支持拖入 .md / .markdown 文件')
+      // 分类用真实路径；插入图片需要 File 本身取字节，故按键建立映射
+      const paths = files.map((f) => fileApi.getPathForFile(f))
+      const { markdown, images } = classifyDroppedPaths(paths)
+      if (markdown.length > 0) {
+        for (const p of markdown) void openFile(p)
         return
       }
-      for (const p of paths) void openFile(p)
+      if (images.length > 0) {
+        const byPath = new Map(paths.map((p, i) => [p, files[i]]))
+        const picked = images.map((p) => byPath.get(p)).filter((f): f is File => f != null)
+        void insertImages(picked)
+        return
+      }
+      message.info('仅支持拖入 Markdown 或图片文件')
     }
     window.addEventListener('dragover', onDragOver, true)
     window.addEventListener('drop', onDrop, true)
@@ -330,7 +395,21 @@ export default function App() {
       window.removeEventListener('dragover', onDragOver, true)
       window.removeEventListener('drop', onDrop, true)
     }
-  }, [openFile])
+  }, [openFile, insertImages])
+
+  // 粘贴：剪贴板里有图片（截图等）时插入图片，其余情况交给编辑器处理文本
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const files = e.clipboardData ? Array.from(e.clipboardData.files) : []
+      const images = files.filter((f) => extFromImageFile(f.name, f.type) !== null)
+      if (images.length === 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      void insertImages(images)
+    }
+    window.addEventListener('paste', onPaste, true)
+    return () => window.removeEventListener('paste', onPaste, true)
+  }, [insertImages])
 
   const openWorkspace = useCallback(async () => {
     try {
@@ -359,6 +438,22 @@ export default function App() {
       message.error(`清除失败：${e instanceof Error ? e.message : String(e)}`)
     }
   }, [setRecent])
+
+  // —— 图片存放目录：选择与打开 ——
+  const chooseImageDir = useCallback(async () => {
+    try {
+      const dir = await settingsApi.chooseImageDir(appSettings?.imageDir ?? '')
+      if (dir) await updateSetting('imageDir', dir)
+    } catch (e) {
+      message.error(`选择目录失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [appSettings?.imageDir, updateSetting])
+
+  const revealImageDir = useCallback(() => {
+    const dir = appSettings?.imageDir
+    if (!dir) return
+    fileApi.reveal(dir).catch((e) => message.error(String(e)))
+  }, [appSettings?.imageDir])
 
   const newFile = useCallback(
     async (dir?: string) => {
@@ -392,6 +487,27 @@ export default function App() {
       message.error(`另存为失败：${e instanceof Error ? e.message : String(e)}`)
     }
   }, [refreshTree, openFile])
+
+  // —— 导出为 HTML / PDF（内容取自内存，包含尚未落盘的编辑） ——
+  const exportDoc = useCallback(async (format: 'html' | 'pdf') => {
+    const st = useWorkspaceStore.getState()
+    const path = st.activePath
+    if (!path) {
+      message.info('请先打开一个文档')
+      return
+    }
+    const req = {
+      markdown: st.contents[path] ?? '',
+      sourcePath: path,
+      title: st.tabs.find((t) => t.path === path)?.title ?? titleFromPath(path)
+    }
+    try {
+      const savedPath = format === 'html' ? await exportApi.html(req) : await exportApi.pdf(req)
+      if (savedPath) message.success(`已导出到 ${savedPath}`)
+    } catch (e) {
+      message.error(`导出失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [])
 
   // —— 手动保存（Ctrl+S / 工具栏）：立即写盘，取消防抖中同路径的待写 ——
   const handleSave = useCallback(async () => {
@@ -603,6 +719,23 @@ export default function App() {
               title="另存为"
               onClick={saveAs}
             />
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  { key: 'html', icon: <FileTextOutlined />, label: '导出为 HTML…' },
+                  { key: 'pdf', icon: <FilePdfOutlined />, label: '导出为 PDF…' }
+                ],
+                onClick: ({ key }) => void exportDoc(key as 'html' | 'pdf')
+              }}
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={<DownloadOutlined />}
+                title="导出为 HTML / PDF"
+              />
+            </Dropdown>
             <Button
               type="text"
               size="small"
@@ -631,6 +764,13 @@ export default function App() {
               title="切换主题"
               onClick={toggleTheme}
             />
+            <Button
+              type="text"
+              size="small"
+              icon={<SettingOutlined />}
+              title="设置"
+              onClick={() => setSettingsOpen(true)}
+            />
           </Layout.Header>
 
           <Layout.Content
@@ -642,6 +782,7 @@ export default function App() {
                 <Editor
                   ref={editorRef}
                   initialMarkdown={contents[activePath] ?? ''}
+                  docDir={dirname(activePath)}
                   onChange={handleEdit}
                   onChangeDirty={() => {}}
                   onModeChange={setMode}
@@ -668,6 +809,17 @@ export default function App() {
           </Layout.Content>
         </Layout>
       </Layout>
+
+      {appSettings && (
+        <SettingsDrawer
+          open={settingsOpen}
+          settings={appSettings}
+          onChange={(key, value) => void updateSetting(key, value)}
+          onChooseImageDir={() => void chooseImageDir()}
+          onRevealImageDir={revealImageDir}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
 
       <Modal
         open={pendingClose != null}

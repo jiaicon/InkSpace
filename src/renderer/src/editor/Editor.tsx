@@ -8,8 +8,15 @@ import type { EditorHandle, EditorMode, EditorProps } from './types'
 type Adapter = MarkdownEditorAdapter | SourceEditorAdapter
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(props, ref) {
-  const { initialMarkdown, onChange, onChangeDirty, onModeChange, onOutlineChange, onRequestLink } =
-    props
+  const {
+    initialMarkdown,
+    docDir,
+    onChange,
+    onChangeDirty,
+    onModeChange,
+    onOutlineChange,
+    onRequestLink
+  } = props
   const containerRef = useRef<HTMLDivElement>(null)
   const adapterRef = useRef<Adapter | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +34,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
   // 用 ref 保持 onRequestLink 最新，避免异步挂载时闭包过期
   const onRequestLinkRef = useRef(onRequestLink)
   onRequestLinkRef.current = onRequestLink
+
+  // 图片解析所需的文档目录：挂载时读 ref，切换文档时由下面的 effect 立刻同步给已有实例
+  const docDirRef = useRef<string | null>(docDir ?? null)
+  docDirRef.current = docDir ?? null
+  useEffect(() => {
+    adapterRef.current?.setDocDir(docDir ?? null)
+  }, [docDir])
 
   function emitOutline(): void {
     if (onOutlineChange) onOutlineChange(parseOutline(controllerRef.current!.getMarkdown()))
@@ -65,6 +79,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
       return
     }
     adapterRef.current = adapter
+    adapter.setDocDir(docDirRef.current)
     // 异步挂载期间若内容已被 setMarkdown 切换到另一文件，补同步，避免展示旧文件内容
     const latest = controller.getMarkdown()
     if (latest !== md) adapter.setContent(latest)
@@ -94,7 +109,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     },
     insertImage: (src) => adapterRef.current?.insertImage(src),
     setLink: (href, range) => adapterRef.current?.setLink(href, range),
-    getSelection: () => adapterRef.current?.getSelection() ?? null
+    getSelection: () => adapterRef.current?.getSelection() ?? null,
+    setDocDir: (dir) => adapterRef.current?.setDocDir(dir)
   }))
 
   // 有意只挂载一次：mount/emitOutline 仅依赖 ref，闭包不会过期；

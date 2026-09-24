@@ -10,6 +10,8 @@ export const fileApi = {
   remove: (path: string) => unwrap<void>(window.api.file.remove(path)),
   reveal: (path: string) => unwrap<void>(window.api.file.reveal(path)),
   pick: () => unwrap<string | null>(window.api.file.pick()),
+  saveImage: (docPath: string, data: Uint8Array, ext: string) =>
+    unwrap<string>(window.api.file.saveImage(docPath, data, ext)),
   pendingOpen: () => unwrap<string | null>(window.api.file.pendingOpen()),
   onOpenExternal: (cb: (path: string) => void) => window.api.file.onOpenExternal(cb),
   getPathForFile: (file: File) => {

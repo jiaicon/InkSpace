@@ -1,12 +1,15 @@
 import { dialog, shell } from 'electron'
+import { randomBytes } from 'node:crypto'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc'
 import { handle } from '../../ipc/util'
 import { createFileService } from './service'
 import { getPendingOpenPath } from './external'
+import { formatStamp, isAllowedImageExt, planImagePlacement } from './assets'
+import type { SettingsService } from '../settings/service'
 
-/** 注册 file 模块的 IPC handler（另存对话框、读写、重命名、删除、显示） */
-export function registerFileIpc(): void {
+/** 注册 file 模块的 IPC handler（另存对话框、读写、重命名、删除、显示、图片落盘） */
+export function registerFileIpc(settings: SettingsService): void {
   const svc = createFileService()
 
   handle(IPC.fileRead, (path) => svc.read(path as string))
@@ -37,6 +40,22 @@ export function registerFileIpc(): void {
   })
 
   handle(IPC.fileRename, (path, newName) => svc.rename(path as string, newName as string))
+
+  // 粘贴/拖入的图片：按设置规划落点后写盘，返回写进 markdown 的路径
+  handle(IPC.fileSaveImage, async (docPath, data, ext) => {
+    const clean = String(ext).toLowerCase().replace(/^\./, '')
+    if (!isAllowedImageExt(clean)) throw new Error(`不支持的图片格式：${ext}`)
+    // 时间戳 + 随机后缀：同一秒内连续粘贴也不会互相覆盖
+    const plan = planImagePlacement({
+      docPath: docPath as string,
+      settings: settings.getAll(),
+      ext: clean,
+      stamp: formatStamp(new Date()),
+      rand: randomBytes(2).toString('hex')
+    })
+    await svc.saveImage(plan.absPath, data as Uint8Array)
+    return plan.refPath
+  })
 
   handle(IPC.fileDelete, async (path) => {
     try {

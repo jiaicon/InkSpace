@@ -8,6 +8,8 @@ export interface OutlineNode {
 
 export interface EditorProps {
   initialMarkdown: string
+  /** 当前文档所在目录，用于解析文档里的相对图片路径；未保存过为 null */
+  docDir?: string | null
   onChange: (md: string) => void
   onChangeDirty: (dirty: boolean) => void
   onModeChange?: (mode: EditorMode) => void
@@ -31,4 +33,6 @@ export interface EditorHandle {
   setLink(href: string, range?: { from: number; to: number }): void
   /** 当前文本选区；无选区返回 null */
   getSelection(): { from: number; to: number } | null
+  /** 告知当前文档所在目录（用于把相对图片路径解析为可加载 URL）；未保存过传 null */
+  setDocDir(dir: string | null): void
 }

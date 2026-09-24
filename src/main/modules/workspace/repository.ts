@@ -1,11 +1,9 @@
 import type Database from 'better-sqlite3'
 import type { RecentFile } from '@shared/types'
+import { createSettingsRepository } from '../settings/repository'
 
 // —— SQL 位置（DML） ——
 const SQL = {
-  getSetting: `SELECT value FROM settings WHERE key = ?`,
-  setSetting: `INSERT INTO settings (key, value) VALUES (@key, @value)
-               ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
   listRecent: `SELECT path, title, last_opened_at AS lastOpenedAt
                FROM recent_files ORDER BY last_opened_at DESC`,
   upsertRecent: `INSERT INTO recent_files (path, title, last_opened_at)
@@ -16,15 +14,19 @@ const SQL = {
   clearRecent: `DELETE FROM recent_files`
 }
 
-/** 数据访问层：settings KV + recent_files，不含业务规则 */
+/**
+ * 数据访问层：recent_files。
+ * settings KV 的 SQL 归 settings 模块所有（settings 表是共享 KV），这里只做转发，
+ * 保持工作区自身的读写接口不变。
+ */
 export function createWorkspaceRepository(db: Database.Database) {
+  const settings = createSettingsRepository(db)
   return {
     getSetting(key: string): string | undefined {
-      const row = db.prepare(SQL.getSetting).get(key) as { value: string } | undefined
-      return row?.value
+      return settings.get(key)
     },
     setSetting(key: string, value: string): void {
-      db.prepare(SQL.setSetting).run({ key, value })
+      settings.set(key, value)
     },
     listRecent(): RecentFile[] {
       return db.prepare(SQL.listRecent).all() as RecentFile[]

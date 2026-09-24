@@ -5,9 +5,13 @@ import { openDatabase } from './db/database'
 import { migrate } from './db/migrate'
 import { registerIpc } from './ipc/register'
 import { extractOpenPath, setPendingOpenPath } from './modules/file/external'
+import { handleMsFileProtocol, registerMsFileScheme } from './modules/file/protocol'
 
 // 应用显示名：中文「墨境」；英文名 InkSpace 用于打包（exe/安装器/productName）
 app.setName('墨境')
+
+// 自定义协议必须在 app ready 之前登记
+registerMsFileScheme()
 
 // 单实例：外部「打开方式」再次唤起时，把文件交给已运行实例，而不是开第二个窗口
 if (!app.requestSingleInstanceLock()) {
@@ -69,6 +73,9 @@ if (!app.requestSingleInstanceLock()) {
     const db = openDatabase(join(app.getPath('userData'), 'app.db'))
     migrate(db)
     registerIpc(db)
+
+    // 文档里的相对图片路径由 ms-file 协议提供
+    handleMsFileProtocol()
 
     // 启动参数里若带了 md 文件（右键「打开方式」首启），记录待打开路径，渲染进程启动后拉取
     setPendingOpenPath(extractOpenPath(process.argv))

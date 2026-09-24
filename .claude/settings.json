@@ -55,7 +55,27 @@
       "Read(//d/mine/electron-app/node_modules/@milkdown/utils/src/composable/**)",
       "WebSearch",
       "WebFetch(domain:www.e-com-net.com)",
-      "Bash(grep -n \"posFromDOM\\(node, offset, bias\\)\\\\s*{\" node_modules/prosemirror-view/dist/index.js)"
-    ]
+      "Bash(grep -n \"posFromDOM\\(node, offset, bias\\)\\\\s*{\" node_modules/prosemirror-view/dist/index.js)",
+      "Bash(find src *)",
+      "Bash(node -e \"const a=require\\('@electron/asar'\\);const l=a.listPackage\\('release/win-unpacked/resources/app.asar'\\);console.log\\(l.filter\\(p=>p.includes\\('node_modules'\\)&&!p.includes\\('node_modules/'\\)===false\\).length\\);console.log\\(l.filter\\(p=>/node_modules\\\\/\\(remark|unified|micromark\\)/.test\\(p\\)\\).slice\\(0,10\\).join\\('\\\\n'\\)||'\\(no remark/unified in asar\\)'\\)\")",
+      "Bash(pnpm run *)",
+      "Bash(git stash *)",
+      "Bash(env)",
+      "Read(//c/Users/jiaic/AppData/Local/Temp/ms-e2e-0VAHB2/**)",
+      "Read(//c/Users/jiaic/AppData/Local/Temp/**)",
+      "Bash(grep -rn '$view' node_modules/@milkdown/kit/lib/utils.d.ts)",
+      "Bash(grep -rn 'export.*$view' node_modules/@milkdown/utils/lib/index.d.ts)",
+      "Bash(grep -o '\\\\$view' node_modules/@milkdown/utils/lib/index.d.ts)",
+      "Bash(cd d:/mine/electron-app && grep -rn \"imageSchema\" node_modules/@milkdown/preset-commonmark/lib/index.js | head -3; echo \"--- d.ts ---\"; grep -rn \"imageSchema\" node_modules/@milkdown/preset-commonmark/lib/*.d.ts 2>/dev/null | head -3; echo \"--- \\\\$view 签名 ---\"; cat node_modules/@milkdown/utils/lib/composable/\\\\$view.d.ts)",
+      "Bash(node -e \"require\\('esbuild'\\); console.log\\('esbuild 可用'\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -NoProfile -Command \"[bool]\\(New-Object Security.Principal.WindowsPrincipal\\([Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\)\\).IsInRole\\([Security.Principal.WindowsBuiltInRole]::Administrator\\)\")",
+      "Bash(powershell -NoProfile -Command \"whoami /groups | Select-String 'Mandatory Level'\")",
+      "Bash(powershell -NoProfile -Command \"Get-Process electron -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,MainWindowTitle | Format-Table -AutoSize\")",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''electron.exe'\\\\''\" | Select-Object ProcessId,ParentProcessId,@{n='\\\\''Cmd'\\\\'';e={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-List')",
+      "Bash(powershell -NoProfile -Command ' *)",
+      "Bash(powershell -NoProfile -Command 'Get-Process | Where-Object { $_.ProcessName -match '\\\\''InkSpace|electron|墨境'\\\\'' } | Select-Object Id,ProcessName,MainWindowTitle | Format-Table -AutoSize')"
+    ],
+    "additionalDirectories": ["d:\\mine\\electron-app"]
   }
 }

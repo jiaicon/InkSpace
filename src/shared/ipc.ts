@@ -23,7 +23,15 @@ export const IPC = {
   fileDelete: 'file:delete',
   fileReveal: 'file:reveal',
   filePick: 'file:pick',
+  fileSaveImage: 'file:save-image',
   // 外部打开（右键 md「打开方式」）
   filePendingOpen: 'file:pending-open',
-  fileOpenExternal: 'file:open-external'
+  fileOpenExternal: 'file:open-external',
+  // export 模块
+  exportHtml: 'export:html',
+  exportPdf: 'export:pdf',
+  // settings 模块
+  settingsGet: 'settings:get',
+  settingsSet: 'settings:set',
+  settingsChooseImageDir: 'settings:choose-image-dir'
 } as const

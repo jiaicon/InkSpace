@@ -6,6 +6,8 @@ export interface FileService {
   write(path: string, content: string): Promise<void>
   rename(path: string, newName: string): Promise<string>
   remove(path: string): Promise<void>
+  /** 把图片字节写到指定绝对路径（自动建父目录）；落点由调用方按设置规划 */
+  saveImage(absPath: string, data: Uint8Array): Promise<void>
 }
 
 /** 文件读写 service：只用 node:fs/promises，不 import Electron，可用临时目录单测。 */
@@ -31,6 +33,10 @@ export function createFileService(): FileService {
     },
     remove: async (path) => {
       await rm(path, { recursive: true, force: true })
+    },
+    saveImage: async (absPath, data) => {
+      await mkdir(dirname(absPath), { recursive: true })
+      await writeFile(absPath, data)
     }
   }
 }

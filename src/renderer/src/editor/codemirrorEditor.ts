@@ -11,6 +11,7 @@ export interface SourceEditorAdapter {
   insertImage(src: string): void
   setLink(href: string, range?: { from: number; to: number }): void
   getSelection(): { from: number; to: number } | null
+  setDocDir(dir: string | null): void
 }
 
 export function createCodeMirrorEditor(
@@ -62,6 +63,8 @@ export function createCodeMirrorEditor(
     getSelection: () => {
       const { from, to } = view.state.selection.main
       return from === to ? null : { from, to }
-    }
+    },
+    // 源码模式显示的是原始 markdown 文本，没有图片需要解析，无需处理
+    setDocDir: () => {}
   }
 }

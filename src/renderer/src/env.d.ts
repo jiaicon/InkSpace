@@ -7,7 +7,9 @@ import type {
   IpcResult,
   FileTreeNode,
   RecentFile,
-  WorkspaceInfo
+  WorkspaceInfo,
+  ExportRequest,
+  AppSettings
 } from '@shared/types'
 
 declare global {
@@ -39,9 +41,19 @@ declare global {
         remove: (path: string) => Promise<IpcResult<void>>
         reveal: (path: string) => Promise<IpcResult<void>>
         pick: () => Promise<IpcResult<string | null>>
+        saveImage: (docPath: string, data: Uint8Array, ext: string) => Promise<IpcResult<string>>
         pendingOpen: () => Promise<IpcResult<string | null>>
         onOpenExternal: (cb: (path: string) => void) => void
         getPathForFile: (file: File) => string
+      }
+      export: {
+        html: (req: ExportRequest) => Promise<IpcResult<string | null>>
+        pdf: (req: ExportRequest) => Promise<IpcResult<string | null>>
+      }
+      settings: {
+        get: () => Promise<IpcResult<AppSettings>>
+        set: (key: string, value: string) => Promise<IpcResult<AppSettings>>
+        chooseImageDir: (current: string) => Promise<IpcResult<string | null>>
       }
     }
   }
