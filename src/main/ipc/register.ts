@@ -5,6 +5,7 @@ import { registerWorkspaceIpc } from '../modules/workspace'
 import { registerFileIpc } from '../modules/file'
 import { registerExportIpc } from '../modules/export'
 import { registerSettingsIpc } from '../modules/settings'
+import { registerThemesIpc } from '../modules/themes'
 
 /**
  * 汇总注册所有模块的 IPC handler。
@@ -14,7 +15,9 @@ export function registerIpc(db: Database.Database): void {
   registerUserIpc(db)
   registerSystemIpc()
   registerWorkspaceIpc(db)
-  // settings 先建好再注入 file：图片落盘位置由设置决定
-  registerFileIpc(registerSettingsIpc(db))
-  registerExportIpc()
+  // settings 先建好再注入 file / export：图片落盘位置、导出主题都由设置决定
+  const settings = registerSettingsIpc(db)
+  const themes = registerThemesIpc()
+  registerFileIpc(settings)
+  registerExportIpc(settings, themes)
 }

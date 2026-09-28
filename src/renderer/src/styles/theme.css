@@ -84,6 +84,9 @@ body {
 
 .milkdown {
   min-height: 100%;
+  /* 文档区底色：Markdown 主题在 .milkdown 上设置 --ms-bg 即可改，
+     界面外壳仍在 :root 的 --ms-bg 上，两者互不影响 */
+  background: var(--ms-bg);
 }
 
 /* 居中阅读栏：接近 Typora 的舒适排版 */
@@ -178,7 +181,8 @@ body {
   height: 1.1em;
   border: 1px solid var(--ms-table-border);
   border-radius: 4px;
-  background: #fff;
+  /* 空框底色跟随文档底色，深色主题下才不会是个白块 */
+  background: var(--ms-bg);
   cursor: pointer;
 }
 .milkdown .editor li[data-item-type='task'][data-checked='true'] {
@@ -218,9 +222,13 @@ body {
   border-radius: 4px;
 }
 
-/* 代码块 */
-.milkdown .editor pre {
+/* 代码块：底色与文字色交给所选代码主题（hljs 类挂在 <pre> 上）。
+   下面这条用 :where() 把特异性归零，只在主题未提供对应规则时兜底，不会盖住主题。 */
+:where(.milkdown .editor pre) {
   background: var(--ms-code-bg);
+  color: var(--ms-code-text);
+}
+.milkdown .editor pre {
   padding: 16px;
   border-radius: 6px;
   overflow: auto;
@@ -248,7 +256,6 @@ body {
   padding: 0;
   font-family: var(--ms-font-mono);
   font-size: 0.85em;
-  color: var(--ms-code-text);
   border-radius: 0;
 }
 
@@ -700,4 +707,53 @@ html[data-theme='dark'] .ms-outline-item:hover {
 }
 html[data-theme='dark'] .ms-sider .ant-tree .ant-tree-treenode:hover {
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* ==========================================================================
+   查找 / 替换
+   ========================================================================== */
+
+/* 匹配高亮：ProseMirror（所见即所得）与 CodeMirror（源码模式）各有一套类名，
+   配色走 --ms-accent，跟随主题 */
+.ProseMirror-search-match,
+.cm-searchMatch {
+  background: color-mix(in srgb, var(--ms-accent) 22%, transparent);
+  border-radius: 2px;
+}
+.ProseMirror-active-search-match,
+.cm-searchMatch-selected {
+  background: color-mix(in srgb, var(--ms-accent) 45%, transparent);
+  outline: 1px solid var(--ms-accent);
+  border-radius: 2px;
+}
+
+/* 查找条：浮在内容区右上角，两种编辑模式共用 */
+.ms-findbar {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--ms-bg);
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.ms-findbar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ms-findbar-input {
+  width: 180px;
+  flex: none;
+}
+.ms-findbar-count {
+  min-width: 56px;
+  font-size: 12px;
+  color: var(--ms-text-secondary);
+  text-align: right;
 }

@@ -1,5 +1,7 @@
 import { isAbsolute } from 'node:path'
 import type { AppSettings, ImageStorageMode, ThemeMode } from '@shared/types'
+import { DEFAULT_HIGHLIGHT_THEME, isKnownHighlightTheme } from '@shared/highlightThemes'
+import { isSafeThemeId } from '../themes/store'
 import type { SettingsRepository } from './repository'
 
 const IMAGE_STORAGE_MODES: readonly ImageStorageMode[] = ['unified', 'relative']
@@ -7,12 +9,19 @@ const THEMES: readonly ThemeMode[] = ['light', 'dark']
 // 子目录名不得含路径分隔符或 Windows 非法字符，避免被用来跳出文档目录
 const INVALID_SUBDIR = /[\\/:*?"<>|]/
 
+/** 'auto' 表示不套 Markdown 主题（跟随基础亮暗）；其余必须是安全 id */
+const DEFAULT_MARKDOWN_THEME = 'auto'
+const isMarkdownThemeValue = (v: string): boolean =>
+  v === DEFAULT_MARKDOWN_THEME || isSafeThemeId(v)
+
 export function defaultSettings(defaultImageDir: string): AppSettings {
   return {
     theme: 'light',
     imageStorage: 'unified',
     imageDir: defaultImageDir,
-    imageSubdir: 'assets'
+    imageSubdir: 'assets',
+    highlightTheme: DEFAULT_HIGHLIGHT_THEME,
+    markdownTheme: DEFAULT_MARKDOWN_THEME
   }
 }
 
@@ -43,7 +52,13 @@ export function createSettingsService(
           ? (stored.imageStorage as ImageStorageMode)
           : defaults.imageStorage,
         imageDir: stored.imageDir || defaults.imageDir,
-        imageSubdir: stored.imageSubdir || defaults.imageSubdir
+        imageSubdir: stored.imageSubdir || defaults.imageSubdir,
+        highlightTheme: isKnownHighlightTheme(stored.highlightTheme ?? '')
+          ? stored.highlightTheme
+          : defaults.highlightTheme,
+        markdownTheme: isMarkdownThemeValue(stored.markdownTheme ?? '')
+          ? (stored.markdownTheme as string)
+          : defaults.markdownTheme
       }
     },
 
@@ -57,6 +72,12 @@ export function createSettingsService(
       }
       if (key === 'imageDir' && !isAbsolute(value)) {
         throw new Error(`图片目录必须是绝对路径：${value}`)
+      }
+      if (key === 'highlightTheme' && !isKnownHighlightTheme(value)) {
+        throw new Error(`未知的代码块主题：${value}`)
+      }
+      if (key === 'markdownTheme' && !isMarkdownThemeValue(value)) {
+        throw new Error(`未知的 Markdown 主题：${value}`)
       }
       if (key === 'imageSubdir' && (value === '' || INVALID_SUBDIR.test(value))) {
         throw new Error(`子目录名不能为空或包含非法字符：${value}`)

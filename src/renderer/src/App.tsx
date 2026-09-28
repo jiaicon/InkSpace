@@ -25,9 +25,10 @@ import {
   FilePdfOutlined,
   SettingOutlined
 } from '@ant-design/icons'
-import type { AppSettings, ThemeMode } from '@shared/types'
+import type { AppSettings, MarkdownThemeInfo, ThemeMode } from '@shared/types'
+import { resolveHighlightTheme } from '@shared/highlightThemes'
 import { Editor, parseOutline } from './editor'
-import type { EditorHandle, EditorMode } from './editor'
+import type { EditorHandle, EditorMode, SearchInfo } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
 import { titleFromPath, dirname } from './utils/path'
 import { classifyDroppedPaths } from './utils/drop'
@@ -36,12 +37,15 @@ import { workspaceApi } from './api/workspace'
 import { fileApi } from './api/file'
 import { exportApi } from './api/export'
 import { settingsApi } from './api/settings'
+import { themesApi } from './api/themes'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { Welcome } from './components/Welcome'
 import { SettingsDrawer } from './components/SettingsDrawer'
+import { FindBar } from './components/FindBar'
 import { debounce } from './utils/debounce'
 import { countStats } from './utils/stats'
+import { upsertStyle } from './utils/injectStyle'
 
 const SIDEBAR_WIDTH = 280
 
@@ -116,6 +120,14 @@ export default function App() {
   )
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // —— 查找 / 替换 ——
+  const [findOpen, setFindOpen] = useState(false)
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false)
+  const [findInfo, setFindInfo] = useState<SearchInfo>({ total: 0, current: 0 })
+  // Markdown 主题列表（内置 + userData/themes 下的自定义）
+  const [themes, setThemes] = useState<MarkdownThemeInfo[]>([])
+  // 磁盘上的主题可能被用户直接编辑，用版本号强制重新读取 CSS
+  const [themesVersion, setThemesVersion] = useState(0)
 
   // —— 大纲与字数统计（随当前文档变化） ——
   const currentMd = contents[activePath ?? ''] ?? ''
@@ -185,6 +197,46 @@ export default function App() {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('ms-theme', theme)
   }, [theme])
+
+  // —— 代码块主题：注入 highlight.js 主题 CSS；'auto' 会跟随上面的明暗解析 ——
+  useEffect(() => {
+    upsertStyle('ms-code-theme', resolveHighlightTheme(appSettings?.highlightTheme, theme).css)
+  }, [appSettings?.highlightTheme, theme])
+
+  // —— Markdown 主题列表：内置 + 自定义（磁盘上的） ——
+  const reloadThemes = useCallback(async () => {
+    try {
+      setThemes(await themesApi.list())
+    } catch {
+      // 列表读不到不影响编辑，只是设置页里选不了主题
+    }
+    setThemesVersion((v) => v + 1)
+  }, [])
+
+  useEffect(() => {
+    void reloadThemes()
+  }, [reloadThemes])
+
+  // —— 应用 Markdown 主题：'auto' 表示不套主题，沿用基础亮暗变量 ——
+  useEffect(() => {
+    const id = appSettings?.markdownTheme
+    if (!id || id === 'auto') {
+      upsertStyle('ms-markdown-theme', '')
+      return
+    }
+    let cancelled = false
+    themesApi
+      .getCss(id)
+      .then((css) => {
+        if (!cancelled) upsertStyle('ms-markdown-theme', css ?? '')
+      })
+      .catch(() => {
+        // 主题读不到就当作没套主题，不打断编辑
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [appSettings?.markdownTheme, themesVersion])
 
   const updateSetting = useCallback(async (key: keyof AppSettings, value: string) => {
     try {
@@ -455,6 +507,37 @@ export default function App() {
     fileApi.reveal(dir).catch((e) => message.error(String(e)))
   }, [appSettings?.imageDir])
 
+  // —— Markdown 主题：导入 / 导出 / 打开目录 ——
+  const importTheme = useCallback(async () => {
+    try {
+      const info = await themesApi.import()
+      if (!info) return
+      await reloadThemes()
+      await updateSetting('markdownTheme', info.id)
+      message.success(`已导入主题「${info.name}」`)
+    } catch (e) {
+      message.error(`导入主题失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [reloadThemes, updateSetting])
+
+  const exportTheme = useCallback(async () => {
+    const id = appSettings?.markdownTheme
+    if (!id || id === 'auto') {
+      message.info('请先选择一个主题，再导出')
+      return
+    }
+    try {
+      const saved = await themesApi.export(id)
+      if (saved) message.success(`已导出到 ${saved}`)
+    } catch (e) {
+      message.error(`导出主题失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [appSettings?.markdownTheme])
+
+  const revealThemes = useCallback(() => {
+    themesApi.reveal().catch((e) => message.error(String(e)))
+  }, [])
+
   const newFile = useCallback(
     async (dir?: string) => {
       const base = dir ?? useWorkspaceStore.getState().workspacePath
@@ -522,16 +605,7 @@ export default function App() {
     await doSave(st.activePath, md)
   }, [doSave])
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault()
-        void handleSave()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [handleSave])
+  // —— 全局快捷键统一在下方 effects 里注册（避免 Ctrl+S 与 Ctrl+Shift+S 双触发） ——
 
   // —— Tab 关闭（含 dirty 确认）——
   const finalizeClose = useCallback(
@@ -575,6 +649,80 @@ export default function App() {
     },
     [finalizeClose]
   )
+
+  // —— 查找 / 替换：界面状态在这里，具体行为交给编辑器适配器 ——
+  const closeFind = useCallback(() => {
+    setFindOpen(false)
+    setFindInfo({ total: 0, current: 0 })
+    editorRef.current?.clearSearch()
+  }, [])
+
+  const openFind = useCallback((withReplace: boolean) => {
+    setFindOpen(true)
+    if (withReplace) setFindReplaceOpen(true)
+  }, [])
+
+  const runSearch = useCallback((query: string, caseSensitive: boolean) => {
+    editorRef.current?.search({ query, caseSensitive })
+  }, [])
+  const findNext = useCallback(() => editorRef.current?.searchNext(), [])
+  const findPrev = useCallback(() => editorRef.current?.searchPrev(), [])
+  const findReplace = useCallback((text: string) => editorRef.current?.replaceCurrent(text), [])
+  const findReplaceAll = useCallback((text: string) => editorRef.current?.replaceAll(text), [])
+  const handleSearchInfo = useCallback((info: SearchInfo) => setFindInfo(info), [])
+
+  // 切换文档时关掉查找，避免高亮停留在别的文档上
+  useEffect(() => {
+    closeFind()
+  }, [activePath, closeFind])
+
+  // —— 全局快捷键（统一注册，避免同一按键被多个处理器重复响应） ——
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const mod = e.ctrlKey || e.metaKey
+      if (!mod) {
+        if (e.key === 'Escape' && findOpen) {
+          e.preventDefault()
+          closeFind()
+        }
+        return
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 's':
+          e.preventDefault()
+          if (e.shiftKey) void saveAs()
+          else void handleSave()
+          break
+        case 'f':
+          e.preventDefault()
+          openFind(false)
+          break
+        case 'h':
+          e.preventDefault()
+          openFind(true)
+          break
+        case 'n':
+          e.preventDefault()
+          void newFile()
+          break
+        case 'o':
+          e.preventDefault()
+          void openFileDialog()
+          break
+        case 'w': {
+          e.preventDefault()
+          const path = useWorkspaceStore.getState().activePath
+          if (path) requestClose(path)
+          break
+        }
+        default:
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [closeFind, findOpen, handleSave, newFile, openFileDialog, openFind, requestClose, saveAs])
 
   const handleTabChange = useCallback(
     async (path: string) => {
@@ -777,7 +925,7 @@ export default function App() {
             className="ms-content"
             style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
               {hasTabs && activePath ? (
                 <Editor
                   ref={editorRef}
@@ -787,6 +935,7 @@ export default function App() {
                   onChangeDirty={() => {}}
                   onModeChange={setMode}
                   onRequestLink={requestLink}
+                  onSearchInfo={handleSearchInfo}
                 />
               ) : (
                 <Welcome
@@ -797,6 +946,18 @@ export default function App() {
                   onOpenRecent={openFile}
                 />
               )}
+              <FindBar
+                open={findOpen && hasTabs}
+                replaceOpen={findReplaceOpen}
+                info={findInfo}
+                onSearch={runSearch}
+                onNext={findNext}
+                onPrev={findPrev}
+                onReplace={findReplace}
+                onReplaceAll={findReplaceAll}
+                onToggleReplace={() => setFindReplaceOpen((v) => !v)}
+                onClose={closeFind}
+              />
             </div>
             <div className="ms-statusbar">
               <span>字数 {stats.words}</span>
@@ -814,9 +975,14 @@ export default function App() {
         <SettingsDrawer
           open={settingsOpen}
           settings={appSettings}
+          themes={themes}
           onChange={(key, value) => void updateSetting(key, value)}
           onChooseImageDir={() => void chooseImageDir()}
           onRevealImageDir={revealImageDir}
+          onImportTheme={() => void importTheme()}
+          onExportTheme={() => void exportTheme()}
+          onRevealThemes={revealThemes}
+          onReloadThemes={() => void reloadThemes()}
           onClose={() => setSettingsOpen(false)}
         />
       )}

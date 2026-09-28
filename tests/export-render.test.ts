@@ -35,4 +35,35 @@ describe('renderMarkdownToHtml', () => {
   it('空字符串返回空串且不抛错', async () => {
     expect((await renderMarkdownToHtml('')).trim()).toBe('')
   })
+
+  it('标注了语言的代码块被高亮（产出 hljs 类名）', async () => {
+    const html = await renderMarkdownToHtml('```js\nconst x = 1\n```')
+    expect(html).toContain('language-js')
+    expect(html).toContain('hljs-keyword')
+    expect(html).toContain('hljs-number')
+  })
+
+  it('未标注语言的代码块不高亮，但同样带 hljs 类（否则会完全没有样式）', async () => {
+    const html = await renderMarkdownToHtml('```\nplain text\n```')
+    expect(html).not.toContain('hljs-')
+    expect(html).toContain('class="hljs"')
+  })
+
+  it('标注语言的代码块类名同时含 hljs 与 language-xx', async () => {
+    const html = await renderMarkdownToHtml('```js\nconst x = 1\n```')
+    expect(html).toMatch(/class="hljs language-js"/)
+  })
+
+  it('不支持的语言降级为纯文本，不抛错（保证导出不因写错语言名而失败）', async () => {
+    const html = await renderMarkdownToHtml('```notalang\nx = 1\n```')
+    expect(html).toContain('notalang')
+    expect(html).not.toContain('hljs-keyword')
+  })
+
+  it('高亮不会破坏代码块内的转义（尖括号原样显示而非被当标签解析）', async () => {
+    const html = await renderMarkdownToHtml('```html\n<div class="a">x</div>\n```')
+    expect(html).toContain('hljs-tag')
+    // 代码里的 <div 必须是被转义后的文本，不能变成真正的标签
+    expect(html).not.toContain('<div')
+  })
 })

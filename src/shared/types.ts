@@ -82,4 +82,17 @@ export interface AppSettings {
   imageDir: string
   /** 随文档模式下的子目录名（相对文档目录） */
   imageSubdir: string
+  /** 代码块主题 id；'auto' 表示跟随明暗自动挑选 */
+  highlightTheme: string
+  /** Markdown 主题 id；'auto' 表示不套主题、跟随基础亮暗 */
+  markdownTheme: string
+}
+
+/** 一个 Markdown 主题的元信息（内置或自定义） */
+export interface MarkdownThemeInfo {
+  id: string
+  name: string
+  description?: string
+  /** 内置主题写在代码里，自定义主题来自 userData/themes/<id>/ */
+  builtin: boolean
 }

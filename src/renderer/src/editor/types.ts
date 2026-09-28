@@ -16,6 +16,20 @@ export interface EditorProps {
   onOutlineChange?: (outline: OutlineNode[]) => void
   /** 选中工具条「链接」按钮被点击时回调（宿主据此弹出链接对话框） */
   onRequestLink?: () => void
+  /** 查找状态变化（匹配数/当前序号）时回调，供查找条展示 */
+  onSearchInfo?: (info: SearchInfo) => void
+}
+
+/** 查找条件 */
+export interface SearchOptions {
+  query: string
+  caseSensitive: boolean
+}
+
+/** 查找结果概览：total 为匹配总数，current 为当前是第几个（1 起；无当前匹配为 0） */
+export interface SearchInfo {
+  total: number
+  current: number
 }
 
 export interface EditorHandle {
@@ -35,4 +49,13 @@ export interface EditorHandle {
   getSelection(): { from: number; to: number } | null
   /** 告知当前文档所在目录（用于把相对图片路径解析为可加载 URL）；未保存过传 null */
   setDocDir(dir: string | null): void
+
+  /** 设置查找条件；query 为空表示清除查找。两种编辑模式行为一致 */
+  search(options: SearchOptions): void
+  searchNext(): void
+  searchPrev(): void
+  /** 替换当前匹配并跳到下一个 */
+  replaceCurrent(replacement: string): void
+  replaceAll(replacement: string): void
+  clearSearch(): void
 }

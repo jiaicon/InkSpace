@@ -74,7 +74,21 @@
       "Bash(powershell -NoProfile -Command \"Get-Process electron -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,MainWindowTitle | Format-Table -AutoSize\")",
       "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''electron.exe'\\\\''\" | Select-Object ProcessId,ParentProcessId,@{n='\\\\''Cmd'\\\\'';e={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-List')",
       "Bash(powershell -NoProfile -Command ' *)",
-      "Bash(powershell -NoProfile -Command 'Get-Process | Where-Object { $_.ProcessName -match '\\\\''InkSpace|electron|墨境'\\\\'' } | Select-Object Id,ProcessName,MainWindowTitle | Format-Table -AutoSize')"
+      "Bash(powershell -NoProfile -Command 'Get-Process | Where-Object { $_.ProcessName -match '\\\\''InkSpace|electron|墨境'\\\\'' } | Select-Object Id,ProcessName,MainWindowTitle | Format-Table -AutoSize')",
+      "Bash(grep -vE \"^npm warn|^>|^$\")",
+      "Bash(pnpm remove *)",
+      "Bash(xargs -n1 basename)",
+      "Bash(grep -vE \"\\\\.min$\")",
+      "Bash(awk '{print $9, $5\"B\"}')",
+      "Bash(grep -n \"代码高亮：hljs-类名\\\\|^\\\\.milkdown \\\\.editor \\\\.hljs-strong\\\\|代码块\\\\*/\\\\|^\\\\.milkdown \\\\.editor pre code\" src/renderer/src/styles/theme.css)",
+      "Bash(grep -vE \"^\\\\s*$\")",
+      "Bash(powershell -NoProfile -Command \"\\(Get-Process electron -ErrorAction SilentlyContinue | Measure-Object\\).Count\")",
+      "Bash(sed 's/^/typecheck 错误数: /')",
+      "Bash(grep -oE \"^\\\\.milkdown \\\\.editor [^{,]*\" src/renderer/src/styles/theme.css)",
+      "Bash(grep -oE \"^\\\\.markdown-body [^{,]*\" src/main/modules/export/export.css)",
+      "Bash(grep -nE \"^\\\\.markdown-body \\(ul|ol|li|del|img|table|th|tr|blockquote\\)|^/\\\\* ——\" src/main/modules/export/export.css)",
+      "Bash(npm view *)",
+      "Bash(git diff *)"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }

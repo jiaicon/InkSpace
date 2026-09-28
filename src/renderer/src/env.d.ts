@@ -9,7 +9,8 @@ import type {
   RecentFile,
   WorkspaceInfo,
   ExportRequest,
-  AppSettings
+  AppSettings,
+  MarkdownThemeInfo
 } from '@shared/types'
 
 declare global {
@@ -54,6 +55,13 @@ declare global {
         get: () => Promise<IpcResult<AppSettings>>
         set: (key: string, value: string) => Promise<IpcResult<AppSettings>>
         chooseImageDir: (current: string) => Promise<IpcResult<string | null>>
+      }
+      themes: {
+        list: () => Promise<IpcResult<MarkdownThemeInfo[]>>
+        getCss: (id: string) => Promise<IpcResult<string | null>>
+        import: () => Promise<IpcResult<MarkdownThemeInfo | null>>
+        export: (id: string) => Promise<IpcResult<string | null>>
+        reveal: () => Promise<IpcResult<void>>
       }
     }
   }

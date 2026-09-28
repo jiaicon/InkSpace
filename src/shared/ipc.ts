@@ -33,5 +33,11 @@ export const IPC = {
   // settings 模块
   settingsGet: 'settings:get',
   settingsSet: 'settings:set',
-  settingsChooseImageDir: 'settings:choose-image-dir'
+  settingsChooseImageDir: 'settings:choose-image-dir',
+  // themes 模块（Markdown 主题）
+  themesList: 'themes:list',
+  themesGetCss: 'themes:get-css',
+  themesImport: 'themes:import',
+  themesExport: 'themes:export',
+  themesReveal: 'themes:reveal'
 } as const

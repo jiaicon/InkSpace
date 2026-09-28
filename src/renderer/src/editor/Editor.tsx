@@ -15,7 +15,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     onChangeDirty,
     onModeChange,
     onOutlineChange,
-    onRequestLink
+    onRequestLink,
+    onSearchInfo
   } = props
   const containerRef = useRef<HTMLDivElement>(null)
   const adapterRef = useRef<Adapter | null>(null)
@@ -34,6 +35,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
   // 用 ref 保持 onRequestLink 最新，避免异步挂载时闭包过期
   const onRequestLinkRef = useRef(onRequestLink)
   onRequestLinkRef.current = onRequestLink
+
+  const onSearchInfoRef = useRef(onSearchInfo)
+  onSearchInfoRef.current = onSearchInfo
 
   // 图片解析所需的文档目录：挂载时读 ref，切换文档时由下面的 effect 立刻同步给已有实例
   const docDirRef = useRef<string | null>(docDir ?? null)
@@ -67,12 +71,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
               controller.applyEdit(next)
               emitOutline()
             },
-            { onRequestLink: () => onRequestLinkRef.current?.() }
+            {
+              onRequestLink: () => onRequestLinkRef.current?.(),
+              onSearchInfo: (info) => onSearchInfoRef.current?.(info)
+            }
           )
-        : createCodeMirrorEditor(root, md, (next) => {
-            controller.applyEdit(next)
-            emitOutline()
-          })
+        : createCodeMirrorEditor(
+            root,
+            md,
+            (next) => {
+              controller.applyEdit(next)
+              emitOutline()
+            },
+            (info) => onSearchInfoRef.current?.(info)
+          )
     // 本次挂载尚未完成又发起了新的 mount：丢弃这个已过期的实例
     if (seq !== mountSeqRef.current) {
       adapter.destroy()
@@ -110,7 +122,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     insertImage: (src) => adapterRef.current?.insertImage(src),
     setLink: (href, range) => adapterRef.current?.setLink(href, range),
     getSelection: () => adapterRef.current?.getSelection() ?? null,
-    setDocDir: (dir) => adapterRef.current?.setDocDir(dir)
+    setDocDir: (dir) => adapterRef.current?.setDocDir(dir),
+    search: (options) => adapterRef.current?.search(options),
+    searchNext: () => adapterRef.current?.searchNext(),
+    searchPrev: () => adapterRef.current?.searchPrev(),
+    replaceCurrent: (replacement) => adapterRef.current?.replaceCurrent(replacement),
+    replaceAll: (replacement) => adapterRef.current?.replaceAll(replacement),
+    clearSearch: () => adapterRef.current?.clearSearch()
   }))
 
   // 有意只挂载一次：mount/emitOutline 仅依赖 ref，闭包不会过期；

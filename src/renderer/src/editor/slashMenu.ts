@@ -113,7 +113,9 @@ export const slashMenu = $prose((ctx) => {
     })
     menu.setAttribute('data-show', filtered.length > 0 && open ? 'true' : 'false')
     // 选中项变化时滚入可见区域（键盘 ↑↓ 也能跟随滚动）
-    menu.querySelector<HTMLElement>('.ms-slash-item.is-active')?.scrollIntoView({ block: 'nearest' })
+    menu
+      .querySelector<HTMLElement>('.ms-slash-item.is-active')
+      ?.scrollIntoView({ block: 'nearest' })
   }
 
   const updateQuery = () => {

@@ -24,7 +24,9 @@ describe('settings service', () => {
       theme: 'light',
       imageStorage: 'unified',
       imageDir: DEFAULT_DIR,
-      imageSubdir: 'assets'
+      imageSubdir: 'assets',
+      highlightTheme: 'auto',
+      markdownTheme: 'auto'
     })
   })
 
@@ -39,7 +41,9 @@ describe('settings service', () => {
       theme: 'dark',
       imageStorage: 'relative',
       imageDir: 'D:/图库',
-      imageSubdir: 'img'
+      imageSubdir: 'img',
+      highlightTheme: 'auto',
+      markdownTheme: 'auto'
     })
   })
 
@@ -69,8 +73,34 @@ describe('settings service', () => {
       theme: 'dark',
       imageStorage: 'relative',
       imageDir: 'E:/pics',
-      imageSubdir: 'img'
+      imageSubdir: 'img',
+      highlightTheme: 'auto',
+      markdownTheme: 'auto'
     })
+  })
+
+  it('Markdown 主题可写入并在读回时保留', () => {
+    const svc = createSettingsService(fakeRepo(), DEFAULT_DIR)
+    svc.set('markdownTheme', 'juejin')
+    expect(svc.getAll().markdownTheme).toBe('juejin')
+  })
+
+  it('库里存了非法 Markdown 主题值时回落到默认', () => {
+    for (const bad of ['../evil', 'a/b', 'no such']) {
+      const s = createSettingsService(fakeRepo({ markdownTheme: bad }), DEFAULT_DIR).getAll()
+      expect(s.markdownTheme, bad).toBe('auto')
+    }
+  })
+
+  it('代码块主题可写入并在读回时保留', () => {
+    const svc = createSettingsService(fakeRepo(), DEFAULT_DIR)
+    svc.set('highlightTheme', 'monokai')
+    expect(svc.getAll().highlightTheme).toBe('monokai')
+  })
+
+  it('库里存了未知代码块主题时回落到默认', () => {
+    const s = createSettingsService(fakeRepo({ highlightTheme: 'no-such' }), DEFAULT_DIR).getAll()
+    expect(s.highlightTheme).toBe('auto')
   })
 
   describe('校验（IPC 边界，非法值必须挡下）', () => {
@@ -93,6 +123,19 @@ describe('settings service', () => {
       expect(() => svc().set('imageSubdir', '')).toThrow(/非法字符/)
       expect(() => svc().set('imageSubdir', '../evil')).toThrow(/非法字符/)
       expect(() => svc().set('imageSubdir', 'a\\b')).toThrow(/非法字符/)
+    })
+
+    it('拒绝未知代码块主题，但接受 auto 与目录内的 id', () => {
+      expect(() => svc().set('highlightTheme', 'no-such-theme')).toThrow(/未知的代码块主题/)
+      expect(() => svc().set('highlightTheme', 'auto')).not.toThrow()
+      expect(() => svc().set('highlightTheme', 'github-dark')).not.toThrow()
+    })
+
+    it('拒绝不安全的 Markdown 主题 id（会拼进路径）', () => {
+      expect(() => svc().set('markdownTheme', '../evil')).toThrow(/未知的 Markdown 主题/)
+      expect(() => svc().set('markdownTheme', 'a/b')).toThrow(/未知的 Markdown 主题/)
+      expect(() => svc().set('markdownTheme', 'auto')).not.toThrow()
+      expect(() => svc().set('markdownTheme', 'my-theme')).not.toThrow()
     })
 
     it('校验失败时不写入任何内容', () => {

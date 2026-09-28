@@ -17,12 +17,18 @@ afterAll(async () => {
 })
 
 describe('buildExportHtml', () => {
+  const codeCss = '.hljs{background:#272822}'
+  const themes = { markdown: '.milkdown{--ms-accent:#1e80ff}', code: codeCss }
+
   it('markdown → 自包含 HTML：渲染正文、内嵌图片、套上文档模板', async () => {
-    const html = await buildExportHtml({
-      markdown: '# 标题\n\n![图](./assets/a.png)',
-      sourcePath: join(dir, 'note.md'),
-      title: 'note'
-    })
+    const html = await buildExportHtml(
+      {
+        markdown: '# 标题\n\n![图](./assets/a.png)',
+        sourcePath: join(dir, 'note.md'),
+        title: 'note'
+      },
+      themes
+    )
 
     expect(html).toMatch(/^<!DOCTYPE html>/)
     expect(html).toContain('<title>note</title>')
@@ -30,20 +36,29 @@ describe('buildExportHtml', () => {
     // 相对图片被内嵌，导出物不再依赖原始文件
     expect(html).toContain('data:image/png;base64,')
     expect(html).not.toContain('src="./assets/a.png"')
+    // 两套主题 CSS 随导出物一起带走
+    expect(html).toContain(themes.markdown)
+    expect(html).toContain(codeCss)
   })
 
   it('文档未保存过（sourcePath 为 null）时仍能导出，图片保持原样', async () => {
-    const html = await buildExportHtml({
-      markdown: '![图](./assets/a.png)',
-      sourcePath: null,
-      title: '未命名'
-    })
+    const html = await buildExportHtml(
+      {
+        markdown: '![图](./assets/a.png)',
+        sourcePath: null,
+        title: '未命名'
+      },
+      themes
+    )
     expect(html).toContain('<title>未命名</title>')
     expect(html).toContain('src="./assets/a.png"')
   })
 
   it('标题里的 HTML 元字符被转义，不破坏文档结构', async () => {
-    const html = await buildExportHtml({ markdown: 'hi', sourcePath: null, title: '<b>&</b>' })
+    const html = await buildExportHtml(
+      { markdown: 'hi', sourcePath: null, title: '<b>&</b>' },
+      themes
+    )
     expect(html).toContain('<title>&lt;b&gt;&amp;&lt;/b&gt;</title>')
     expect(html).not.toContain('<title><b>')
   })

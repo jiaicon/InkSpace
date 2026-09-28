@@ -10,6 +10,11 @@ import { handleMsFileProtocol, registerMsFileScheme } from './modules/file/proto
 // 应用显示名：中文「墨境」；英文名 InkSpace 用于打包（exe/安装器/productName）
 app.setName('墨境')
 
+// 数据目录用纯 ASCII 名：非 ASCII 路径在部分机器与周边环节（原生模块的路径编码、
+// 杀软/同步盘、备份脚本、控制台代码页）上仍有风险，而显示名保持中文。
+// 必须在 ready 之前、任何 userData 读取之前设置。
+app.setPath('userData', join(app.getPath('appData'), 'InkSpace'))
+
 // 自定义协议必须在 app ready 之前登记
 registerMsFileScheme()
 

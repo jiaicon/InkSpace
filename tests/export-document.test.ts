@@ -12,7 +12,14 @@ describe('escapeHtml', () => {
 })
 
 describe('buildExportDocument', () => {
-  const doc = buildExportDocument({ title: '我的笔记', body: '<h1>Hi</h1>' })
+  const themeCss = '.hljs{background:#272822;color:#ddd}'
+  const markdownCss = '.milkdown{--ms-accent:#1e80ff}'
+  const doc = buildExportDocument({
+    title: '我的笔记',
+    body: '<h1>Hi</h1>',
+    markdownThemeCss: markdownCss,
+    codeThemeCss: themeCss
+  })
 
   it('产出完整的 HTML 文档骨架', () => {
     expect(doc).toMatch(/^<!DOCTYPE html>/)
@@ -23,15 +30,29 @@ describe('buildExportDocument', () => {
 
   it('标题写入 <title> 并转义', () => {
     expect(doc).toContain('<title>我的笔记</title>')
-    expect(buildExportDocument({ title: '<x>', body: '' })).toContain('<title>&lt;x&gt;</title>')
+    expect(
+      buildExportDocument({ title: '<x>', body: '', markdownThemeCss: '', codeThemeCss: '' })
+    ).toContain('<title>&lt;x&gt;</title>')
   })
 
-  it('正文原样嵌入 article 容器', () => {
+  it('正文外面套 .milkdown > .editor 容器，使 Markdown 主题一份写两处生效', () => {
+    expect(doc).toContain('<div class="milkdown">\n<div class="editor">')
     expect(doc).toContain('<article class="markdown-body">\n<h1>Hi</h1>\n</article>')
+    expect(doc).toMatch(/<\/article>\n<\/div>\n<\/div>/)
   })
 
   it('内联样式表，使导出文件自包含', () => {
     expect(doc).toContain('<style>')
-    expect(doc).toContain('--ms-export-text')
+    // 导出侧直接读主题的 --ms-* 变量（不再有中间的 --ms-export-* 映射层）
+    expect(doc).toContain('--ms-text, #24292f')
+  })
+
+  it('两套主题 CSS 都内联，且都排在自带头样式之后（同权重时主题胜出）', () => {
+    expect(doc).toContain(markdownCss)
+    expect(doc).toContain(themeCss)
+    const base = doc.indexOf('--ms-text, #24292f')
+    expect(base).toBeLessThan(doc.indexOf(markdownCss))
+    // 代码主题排在 Markdown 主题之后，代码块观感以代码主题为准
+    expect(doc.indexOf(markdownCss)).toBeLessThan(doc.indexOf(themeCss))
   })
 })
