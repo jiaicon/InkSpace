@@ -22,6 +22,9 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   include: installer.nsh
+  # 快捷方式显示名（中文「墨境」）在 build/installer.nsh 里定义 —— 不能用 shortcutName：
+  # 该值会经命令行 -D 传给 makensis，非 ASCII 会被按本地代码页转换而变成乱码。
+  # exe 名与安装目录仍由上面的 productName 决定，保持 InkSpace 不变。
 mac:
   target: [dmg]
 linux:

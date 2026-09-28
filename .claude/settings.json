@@ -88,7 +88,12 @@
       "Bash(grep -oE \"^\\\\.markdown-body [^{,]*\" src/main/modules/export/export.css)",
       "Bash(grep -nE \"^\\\\.markdown-body \\(ul|ol|li|del|img|table|th|tr|blockquote\\)|^/\\\\* ——\" src/main/modules/export/export.css)",
       "Bash(npm view *)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(timeout 900 pnpm run package:win)",
+      "Bash(grep -viE \"^\\\\s*$|node_modules|deprecat\")",
+      "Bash(wsl --status)",
+      "Bash(wsl -l -v)",
+      "Bash(docker --version)"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }
