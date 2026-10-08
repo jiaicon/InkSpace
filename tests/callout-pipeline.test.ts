@@ -32,6 +32,8 @@ describe('导出管线的 callout', () => {
   it('编辑器实际写出的转义形式（\\[!WARNING]）同样识别', async () => {
     // Milkdown 序列化时会把行首的 [ 转义成 \[（避免被当成链接语法）。
     // 这是编辑器真正存到 .md 里的形式，导出侧必须照样认出来。
+    // 已确认 GitHub 也认这种转义形式（转义在解析阶段还原成字面 [!WARNING]，alert 检测照常命中），
+    // 所以不需要在保存时反转义。
     const html = await renderMarkdownToHtml('> \\[!WARNING]\n>\n> 注意风险\n')
     expect(html).toContain('<div class="callout callout-warning">')
     expect(html).toContain('<p class="callout-title">警告</p>')
