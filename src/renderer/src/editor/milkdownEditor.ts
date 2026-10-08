@@ -16,6 +16,7 @@ import { taskListToggle } from './taskListToggle'
 import { imageView, setImageDocDir } from './imageView'
 import { codeHighlight } from './codeHighlight'
 import { mathPlugins } from './math'
+import { mermaidPlugins } from './mermaid'
 import {
   search as searchPlugin,
   SearchQuery,
@@ -186,6 +187,7 @@ export async function createMilkdownEditor(
     .use(imageView)
     .use(codeHighlight)
     .use(mathPlugins)
+    .use(mermaidPlugins)
     .use(searchExtension)
     .use(searchReporter)
     .create()

@@ -68,9 +68,11 @@ describe('buildExportHtml', () => {
     const html = await buildExportHtml(
       { markdown: '# 标题\n\n普通文本', sourcePath: null, title: 't' },
       themes,
-      async () => {
-        asked = true
-        return '/*KATEX*/'
+      {
+        katexCss: async () => {
+          asked = true
+          return '/*KATEX*/'
+        }
       }
     )
     expect(asked).toBe(false)
@@ -81,7 +83,7 @@ describe('buildExportHtml', () => {
     const html = await buildExportHtml(
       { markdown: '质能方程 $E = mc^2$', sourcePath: null, title: 't' },
       themes,
-      async () => '/*KATEX*/'
+      { katexCss: async () => '/*KATEX*/' }
     )
     expect(html).toContain('class="katex')
     expect(html).toContain('/*KATEX*/')
@@ -90,5 +92,34 @@ describe('buildExportHtml', () => {
   it('没提供 KaTeX 样式回调时也不报错（只是公式少样式）', async () => {
     const html = await buildExportHtml({ markdown: '$x$', sourcePath: null, title: 't' }, themes)
     expect(html).toContain('class="katex')
+  })
+
+  it('文档里有图表时把 mermaid 块换成渲染结果', async () => {
+    const html = await buildExportHtml(
+      { markdown: '```mermaid\ngraph TD;\n  A-->B;\n```', sourcePath: null, title: 't' },
+      themes,
+      { mermaid: async (code) => `<svg data-code="${code.trim()}"></svg>` }
+    )
+    expect(html).toContain(
+      '<div class="ms-mermaid-diagram"><svg data-code="graph TD;\n  A-->B;"></svg></div>'
+    )
+    expect(html).not.toContain('language-mermaid')
+  })
+
+  it('文档里没有图表时不去启动渲染窗口', async () => {
+    let asked = false
+    const html = await buildExportHtml(
+      { markdown: '# 普通文档', sourcePath: null, title: 't' },
+      themes,
+      {
+        mermaid: async (code) => {
+          asked = true
+          return `<svg data-code="${code}"></svg>`
+        }
+      }
+    )
+    expect(asked).toBe(false)
+    // 注意：export.css 本身就含有 .ms-mermaid-diagram 规则，所以只能断言渲染产物
+    expect(html).not.toContain('data-code=')
   })
 })

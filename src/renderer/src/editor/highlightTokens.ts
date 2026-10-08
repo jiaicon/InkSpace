@@ -74,14 +74,17 @@ export interface CodeBlockRange {
 }
 
 /**
- * 文档里所有代码块的完整范围（含边框）。
- * 用来给代码块本身挂上 `hljs` 类，让所选代码主题的 `.hljs { background, color }` 生效——
- * 主题只负责配色，代码块的版式仍由应用样式控制。
+ * 文档里需要高亮着色的代码块范围（含边框），**不含 mermaid 块**——
+ * 图表块由 node view 渲染成图，不该再套代码块的底色与语法着色。
  */
 export function collectCodeBlockRanges(doc: DocLikeNode): CodeBlockRange[] {
   const ranges: CodeBlockRange[] = []
   doc.descendants((node, pos) => {
     if (node.type.name !== 'code_block') return true
+    const language = String(node.attrs.language ?? '')
+      .trim()
+      .toLowerCase()
+    if (language === 'mermaid') return false
     ranges.push({ from: pos, to: pos + node.nodeSize })
     return false
   })

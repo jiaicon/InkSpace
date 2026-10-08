@@ -247,6 +247,27 @@ body {
   border-radius: 4px;
 }
 
+/* —— Mermaid 图表（导出前已渲染成 SVG 内联） —— */
+.markdown-body .ms-mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1em;
+  overflow-x: auto;
+}
+.markdown-body .ms-mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-body .ms-mermaid-error {
+  margin: 0 0 1em;
+  padding: 8px 12px;
+  font-family: var(--ms-font-mono, monospace);
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: #c0392b;
+  border-left: 3px solid #c0392b;
+}
+
 /* —— 脚注（remark-gfm） —— */
 .markdown-body .footnotes {
   margin-top: 3em;

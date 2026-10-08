@@ -101,7 +101,10 @@
       "Bash(grep -rln '$remark' node_modules/@milkdown/utils/lib/)",
       "Bash(grep -rn 'export.*$remark\\\\|remark' node_modules/@milkdown/utils/lib/composable/index.d.ts node_modules/@milkdown/utils/lib/index.d.ts)",
       "Bash(sed -n '1,80p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")",
-      "Bash(sed -n '80,153p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")"
+      "Bash(sed -n '80,153p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")",
+      "Bash(awk '{print \"UMD 包:\", int\\($5/1024/1024*10\\)/10 \"MB\"}')",
+      "Bash(awk '{print $9, int\\($5/1024/1024\\)\"MB\"}')",
+      "Bash(node)"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }

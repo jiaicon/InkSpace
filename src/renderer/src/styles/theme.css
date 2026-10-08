@@ -809,6 +809,49 @@ html[data-theme='dark'] .ms-sider .ant-tree .ant-tree-treenode:hover {
 }
 
 /* ==========================================================================
+   Mermaid 图表
+   与数学公式同一套：渲染层 / 源码层由 .is-editing（光标进入）决定显示哪个
+   ========================================================================== */
+
+.ms-mermaid {
+  margin: 0 0 1em;
+}
+.ms-mermaid .ms-mermaid-render {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.ms-mermaid .ms-mermaid-render.is-error {
+  justify-content: flex-start;
+  padding: 10px 12px;
+  font-family: var(--ms-font-mono);
+  font-size: 0.85em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: #c0392b;
+}
+.ms-mermaid .ms-mermaid-src {
+  display: none;
+  background: var(--ms-code-bg);
+  border-radius: 6px;
+}
+.ms-mermaid.is-editing .ms-mermaid-render {
+  display: none;
+}
+.ms-mermaid.is-editing .ms-mermaid-src {
+  display: block;
+}
+.ms-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+html[data-theme='dark'] .ms-mermaid .ms-mermaid-render.is-error {
+  color: #ff7b72;
+}
+
+/* ==========================================================================
    全局搜索（侧栏「搜索」页）
    ========================================================================== */
 

@@ -14,6 +14,13 @@ fileAssociations:
     role: Editor
 files:
   - out/**
+  # mermaid 只用到 dist/mermaid.min.js（自包含 UMD，已内联全部图表类型）。
+  # 其余 117MB 是源映射、ESM 分包与未压缩版，全部排除。
+  # 实测：mermaid 在 asar 里共占 9.2MB（不排除的话是 122MB）。剩下的 3.9MB 是 mermaid
+  # 自带的一份 katex —— electron-builder 收集生产依赖时会绕过 files 的排除规则，排不掉。
+  - '!node_modules/mermaid/**'
+  - node_modules/mermaid/package.json
+  - node_modules/mermaid/dist/mermaid.min.js
 asarUnpack:
   - node_modules/better-sqlite3/**
 win:

@@ -1,12 +1,10 @@
-import { $inputRule, $nodeSchema, $prose, $remark, $view } from '@milkdown/kit/utils'
-import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
-import type { EditorState } from '@milkdown/kit/prose/state'
-import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
+import { $inputRule, $nodeSchema, $remark, $view } from '@milkdown/kit/utils'
 import type { ViewMutationRecord } from '@milkdown/kit/prose/view'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import { InputRule } from '@milkdown/kit/prose/inputrules'
 import katex from 'katex'
 import remarkMath from 'remark-math'
+import { editingDecoration } from './editingDecoration'
 
 /**
  * 数学公式（KaTeX）。
@@ -147,36 +145,12 @@ export const mathBlockInputRule = $inputRule(
 
 /**
  * 光标进入公式节点时给它打上 `.is-editing`，样式据此在「渲染」与「源码」之间切换。
- * 判定用包含关系：选区完全落在节点内才算进入，光标贴在公式外侧不算。
+ * 与 Mermaid 图表共用同一套装饰逻辑。
  */
-export const mathEditing = $prose(() => {
-  const key = new PluginKey<DecorationSet>('MS_MATH_EDITING')
-
-  const build = (state: EditorState): DecorationSet => {
-    const decorations: Decoration[] = []
-    state.doc.descendants((node, pos) => {
-      if (node.type.name !== INLINE && node.type.name !== BLOCK) return true
-      const to = pos + node.nodeSize
-      if (state.selection.from >= pos && state.selection.to <= to) {
-        decorations.push(Decoration.node(pos, to, { class: 'is-editing' }))
-      }
-      return false
-    })
-    return DecorationSet.create(state.doc, decorations)
-  }
-
-  return new Plugin({
-    key,
-    state: {
-      init: (_config, state) => build(state),
-      apply: (tr, value, _oldState, newState) =>
-        tr.docChanged || tr.selectionSet ? build(newState) : value
-    },
-    props: {
-      decorations: (state) => key.getState(state)
-    }
-  })
-})
+export const mathEditing = editingDecoration(
+  'MS_MATH_EDITING',
+  (node) => node.type.name === INLINE || node.type.name === BLOCK
+)
 
 /** 一次性注册进编辑器 */
 export const mathPlugins = [

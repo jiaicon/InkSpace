@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { basename, dirname, extname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { ExportRequest } from '@shared/types'
-import { buildExportHtml, type ExportThemeCss } from './compose'
+import { buildExportHtml, type ExportRenderers, type ExportThemeCss } from './compose'
 import { removeTempFile } from './tempFile'
 
 // A4 + 0.6 英寸页边距（Electron 的 margins 单位为英寸）
@@ -69,27 +69,19 @@ async function renderPdf(html: string): Promise<Buffer> {
 }
 
 /** 导出服务：先让用户确认保存位置，再渲染写盘，取消则不做无用功 */
-export function createExportService() {
+export function createExportService(renderers: ExportRenderers = {}) {
   return {
-    async exportHtml(
-      req: ExportRequest,
-      themes: ExportThemeCss,
-      katexCss?: () => Promise<string>
-    ): Promise<string | null> {
+    async exportHtml(req: ExportRequest, themes: ExportThemeCss): Promise<string | null> {
       const target = await pickTarget(req, 'html')
       if (!target) return null
-      await writeFile(target, await buildExportHtml(req, themes, katexCss), 'utf8')
+      await writeFile(target, await buildExportHtml(req, themes, renderers), 'utf8')
       return target
     },
 
-    async exportPdf(
-      req: ExportRequest,
-      themes: ExportThemeCss,
-      katexCss?: () => Promise<string>
-    ): Promise<string | null> {
+    async exportPdf(req: ExportRequest, themes: ExportThemeCss): Promise<string | null> {
       const target = await pickTarget(req, 'pdf')
       if (!target) return null
-      await writeFile(target, await renderPdf(await buildExportHtml(req, themes, katexCss)))
+      await writeFile(target, await renderPdf(await buildExportHtml(req, themes, renderers)))
       return target
     }
   }

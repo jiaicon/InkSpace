@@ -118,4 +118,11 @@ describe('collectCodeBlockRanges', () => {
   it('没有代码块时返回空列表', () => {
     expect(collectCodeBlockRanges(schema.node('doc', null, [para('t')]))).toEqual([])
   })
+
+  it('跳过 mermaid 块（它由图表 node view 渲染，不该套代码块底色）', () => {
+    const doc = schema.node('doc', null, [code('mermaid', 'graph TD'), code('js', 'const a = 1')])
+    const ranges = collectCodeBlockRanges(doc)
+    expect(ranges).toHaveLength(1)
+    expect(ranges[0].from).toBeGreaterThan(0)
+  })
 })
