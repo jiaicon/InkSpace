@@ -5,7 +5,9 @@ import {
   wrapInOrderedListCommand,
   wrapInBlockquoteCommand,
   createCodeBlockCommand,
-  insertHrCommand
+  insertHrCommand,
+  turnIntoTextCommand,
+  liftListItemCommand
 } from '@milkdown/kit/preset/commonmark'
 import { insertTableCommand } from '@milkdown/kit/preset/gfm'
 import { $prose } from '@milkdown/kit/utils'
@@ -15,6 +17,7 @@ import type { EditorView } from '@milkdown/kit/prose/view'
 import { wrapInTaskListCommand } from './taskList'
 import { mathBlockSchema } from './math'
 import { MATH_BLOCK_PLACEHOLDER, MERMAID_BLOCK_TEMPLATE } from './slashContent'
+import { canOpenSlashMenu, escapeTarget } from './slashRules'
 import {
   filterSlashItems,
   groupSlashItems,
@@ -35,8 +38,9 @@ interface SlashItem extends SlashItemMeta {
 type SlashSection = { group: SlashGroup; label: string; items: SlashItem[] }
 
 /**
- * 斜杠菜单：在段落开头输入 `/` 呼出块级菜单，按类别横排。
- * 条目定义（名称/分组/别名）在 slashItems.ts，这里只负责动作绑定、过滤与渲染。
+ * 斜杠菜单：在段落或标题的开头输入 `/` 呼出块级菜单，按类别横排。
+ * 条目定义（名称/分组/别名）在 slashItems.ts，判定规则在 slashRules.ts，
+ * 这里只负责动作绑定、过滤与渲染。
  * 输入 `/` 后继续打字即按名称/别名过滤，↑↓ 选择，Enter 确认，Esc 关闭。
  */
 export const slashMenu = (options: SlashMenuOptions = {}) =>
@@ -60,7 +64,57 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
       view.dispatch(tr)
     }
 
+    /** 光标处从内到外的祖先节点类型（不含 doc 本身） */
+    const ancestorTypeNames = () => {
+      const names: string[] = []
+      if (!view) return names
+      const { $from } = view.state.selection
+      for (let depth = $from.depth; depth > 0; depth--) names.push($from.node(depth).type.name)
+      return names
+    }
+
+    /** 某类型祖先所在的 depth；找不到返回 -1 */
+    const depthOf = (name: string) => {
+      if (!view) return -1
+      const { $from } = view.state.selection
+      for (let depth = $from.depth; depth > 0; depth--) {
+        if ($from.node(depth).type.name === name) return depth
+      }
+      return -1
+    }
+
+    /**
+     * 「正文」：从标题 / 列表 / 引用里退回普通段落。
+     * 列表项的段落本身就是 paragraph，直接 setBlockType 是空操作，所以必须先脱出列表。
+     */
+    const toParagraph = () => {
+      if (!view) return
+      const target = escapeTarget(ancestorTypeNames())
+      if (target === 'list') {
+        manager().call(liftListItemCommand.key)
+        return
+      }
+      if (target === 'quote') {
+        const { state } = view
+        const { $from } = state.selection
+        const quoteDepth = depthOf('blockquote')
+        if (quoteDepth > 0) {
+          // 拆掉引用：把 blockquote 整个换成它的内容
+          const quote = $from.node(quoteDepth)
+          const start = $from.before(quoteDepth)
+          const end = $from.after(quoteDepth)
+          const tr = state.tr.replaceWith(start, end, quote.content)
+          tr.setSelection(TextSelection.create(tr.doc, Math.min(start + 1, tr.doc.content.size)))
+          view.dispatch(tr)
+          return
+        }
+      }
+      manager().call(turnIntoTextCommand.key)
+    }
+
     const actions: Record<string, () => void> = {
+      // 退路：把当前块从标题 / 列表 / 引用里退回普通段落
+      text: toParagraph,
       bullet: () => manager().call(wrapInBulletListCommand.key),
       ordered: () => manager().call(wrapInOrderedListCommand.key),
       task: () => manager().call(wrapInTaskListCommand.key),
@@ -215,10 +269,10 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
       }
     }
 
-    // 光标是否在段落起始（`/` 只有在此处才呼出菜单）
-    const isAtParagraphStart = (v: EditorView, pos: number) => {
+    // 光标是否在段落 / 标题的起始（`/` 只有在此处才呼出菜单）
+    const isAtMenuStart = (v: EditorView, pos: number) => {
       const $from = v.state.doc.resolve(pos)
-      return $from.parent.type.name === 'paragraph' && $from.parentOffset === 0
+      return canOpenSlashMenu($from.parent.type.name, $from.parentOffset)
     }
 
     return new Plugin({
@@ -253,10 +307,10 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
               return false
             }
           }
-          // 段落开头输入 `/` 呼出菜单（不拦截，让 `/` 正常插入）
+          // 段落/标题开头输入 `/` 呼出菜单（不拦截，让 `/` 正常插入）
           if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
             const { selection } = v.state
-            if (selection.empty && isAtParagraphStart(v, selection.from)) {
+            if (selection.empty && isAtMenuStart(v, selection.from)) {
               openAt(selection.from)
             }
           }

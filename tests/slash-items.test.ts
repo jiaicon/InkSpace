@@ -104,3 +104,23 @@ describe('slashItems 定义', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 })
+
+describe('补齐的已有能力', () => {
+  it('有「正文」项，把当前块转回普通段落（非技术用户的退路）', () => {
+    const text = slashItems.find((i) => i.id === 'text')
+    expect(text, 'text 项应存在').toBeDefined()
+    expect(text!.label).toBe('正文')
+    expect(text!.group).toBe('block')
+  })
+
+  it('拼音首字母能命中对应项', () => {
+    const ids = (q: string) => filterSlashItems(slashItems, q).map((i) => i.id)
+    expect(ids('gs')).toEqual(['math']) // 公式
+    expect(ids('zw')).toEqual(['text']) // 正文
+    expect(ids('bt')).toEqual(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) // 标题
+    expect(ids('lb')).toEqual(['bullet', 'ordered', 'task']) // 列表
+    expect(ids('tp')).toEqual(['image']) // 图片
+    expect(ids('fgx')).toEqual(['hr']) // 分割线
+    expect(ids('yy')).toEqual(['quote']) // 引用
+  })
+})

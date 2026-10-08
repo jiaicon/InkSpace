@@ -36,7 +36,7 @@ const headingItem = (level: number): SlashItemMeta => ({
   group: 'heading',
   icon: `H${level}`,
   tooltip: `${CN_NUMERALS[level - 1]}级标题`,
-  keywords: [`h${level}`, `heading ${level}`, `标题${level}`, '标题']
+  keywords: [`h${level}`, `heading ${level}`, `标题${level}`, '标题', 'bt']
 })
 
 export const slashItems: SlashItemMeta[] = [
@@ -47,7 +47,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '•',
     label: '无序列表',
     tooltip: '无序列表',
-    keywords: ['list', 'bullet', '无序']
+    keywords: ['list', 'bullet', '无序', 'lb', 'wxlb']
   },
   {
     id: 'ordered',
@@ -55,7 +55,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '1.',
     label: '有序列表',
     tooltip: '有序列表',
-    keywords: ['ordered list', 'number', '有序']
+    keywords: ['ordered list', 'number', '有序', 'lb', 'yxlb']
   },
   {
     id: 'task',
@@ -63,7 +63,15 @@ export const slashItems: SlashItemMeta[] = [
     icon: '☑',
     label: '任务列表',
     tooltip: '任务列表',
-    keywords: ['task', 'todo', 'checkbox', '任务']
+    keywords: ['task', 'todo', 'checkbox', '任务', 'lb', 'rwlb']
+  },
+  {
+    id: 'text',
+    group: 'block',
+    icon: '▤',
+    label: '正文',
+    tooltip: '转回普通段落',
+    keywords: ['text', 'paragraph', 'body', '正文', '段落', '普通', 'zw']
   },
   {
     id: 'quote',
@@ -71,7 +79,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '❝',
     label: '引用',
     tooltip: '引用',
-    keywords: ['quote', 'blockquote', '引用']
+    keywords: ['quote', 'blockquote', '引用', 'yy']
   },
   {
     id: 'hr',
@@ -79,7 +87,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '―',
     label: '分割线',
     tooltip: '分割线',
-    keywords: ['hr', 'divider', 'rule', '分割']
+    keywords: ['hr', 'divider', 'rule', '分割', 'fgx']
   },
   {
     id: 'code',
@@ -87,7 +95,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '</>',
     label: '代码块',
     tooltip: '代码块',
-    keywords: ['code', 'codeblock', '代码']
+    keywords: ['code', 'codeblock', '代码', 'dmk']
   },
   {
     id: 'table',
@@ -95,7 +103,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '⊞',
     label: '表格',
     tooltip: '表格',
-    keywords: ['table', 'grid', '表格']
+    keywords: ['table', 'grid', '表格', 'bg']
   },
   {
     id: 'math',
@@ -103,7 +111,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '∑',
     label: '数学公式',
     tooltip: '数学公式',
-    keywords: ['math', 'formula', 'latex', 'katex', '公式']
+    keywords: ['math', 'formula', 'latex', 'katex', '公式', 'gs']
   },
   {
     id: 'mermaid',
@@ -111,7 +119,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '◈',
     label: 'Mermaid 图',
     tooltip: 'Mermaid 图',
-    keywords: ['mermaid', 'diagram', 'chart', '图表', '图']
+    keywords: ['mermaid', 'diagram', 'chart', '图表', '图', 'mt']
   },
   {
     id: 'image',
@@ -119,7 +127,7 @@ export const slashItems: SlashItemMeta[] = [
     icon: '▣',
     label: '图片',
     tooltip: '图片',
-    keywords: ['image', 'picture', 'img', '图片']
+    keywords: ['image', 'picture', 'img', '图片', 'tp']
   }
 ]
 
