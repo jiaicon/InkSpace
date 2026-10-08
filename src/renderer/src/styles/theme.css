@@ -25,6 +25,23 @@
   --ms-table-border: #d0d7de;
   --ms-table-header-bg: #f6f8fa;
 
+  /* 提示块（callout）：每类 3 个值，亮暗各一套 */
+  --ms-callout-note-bg: #ddf4ff;
+  --ms-callout-note-border: #54aeff;
+  --ms-callout-note-title: #0969da;
+  --ms-callout-tip-bg: #dafbe1;
+  --ms-callout-tip-border: #4ac26b;
+  --ms-callout-tip-title: #1a7f37;
+  --ms-callout-important-bg: #fbefff;
+  --ms-callout-important-border: #c297ff;
+  --ms-callout-important-title: #8250df;
+  --ms-callout-warning-bg: #fff8c5;
+  --ms-callout-warning-border: #d4a72c;
+  --ms-callout-warning-title: #9a6700;
+  --ms-callout-caution-bg: #ffebe9;
+  --ms-callout-caution-border: #ff8182;
+  --ms-callout-caution-title: #cf222e;
+
   /* 字体 */
   --ms-font-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, 'PingFang SC',
@@ -709,6 +726,23 @@ html[data-theme='dark'] {
   --ms-hr: #3a3a3a;
   --ms-table-border: #4a4a4a;
   --ms-table-header-bg: #2a2a2a;
+
+  /* 提示块（callout）：暗色一套，缺了会让暗色下文字不可见 */
+  --ms-callout-note-bg: rgba(47, 129, 247, 0.15);
+  --ms-callout-note-border: #2f81f7;
+  --ms-callout-note-title: #6cb6ff;
+  --ms-callout-tip-bg: rgba(63, 185, 80, 0.15);
+  --ms-callout-tip-border: #3fb950;
+  --ms-callout-tip-title: #56d364;
+  --ms-callout-important-bg: rgba(163, 113, 247, 0.15);
+  --ms-callout-important-border: #a371f7;
+  --ms-callout-important-title: #b083f0;
+  --ms-callout-warning-bg: rgba(210, 153, 34, 0.15);
+  --ms-callout-warning-border: #d29922;
+  --ms-callout-warning-title: #e3b341;
+  --ms-callout-caution-bg: rgba(248, 81, 73, 0.15);
+  --ms-callout-caution-border: #f85149;
+  --ms-callout-caution-title: #ff7b72;
 }
 
 html[data-theme='dark'] body {
@@ -975,4 +1009,70 @@ html[data-theme='dark'] .ms-mermaid .ms-mermaid-render.is-error {
   background: color-mix(in srgb, var(--ms-accent) 30%, transparent);
   color: inherit;
   border-radius: 2px;
+}
+
+/* 提示块（GitHub Alerts 语法）：标记段就是首段，渲染层藏掉它、由 widget 标题行顶替。
+   选择器特意带到 `blockquote.ms-callout*` 一级：既有引用样式 `.milkdown .editor blockquote`
+   （特异性 0,2,1）会设 margin/padding/border/background/color，不带元素选择器就会被它盖掉；
+   同理 `blockquote p { margin: 0 }` 会吃掉标题行的下边距，标题规则也必须更特化。 */
+.milkdown .editor blockquote.ms-callout {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border-left: 4px solid transparent;
+  border-radius: 4px;
+  /* 引用样式会把正文染成次要色；callout 正文应是正常正文色，与导出侧保持一致 */
+  color: var(--ms-text);
+}
+.milkdown .editor blockquote.ms-callout .ms-callout-title {
+  margin: 0 0 0.4em;
+  font-weight: 600;
+  user-select: none;
+}
+.milkdown .editor blockquote.ms-callout > *:last-child {
+  margin-bottom: 0;
+}
+/* 非编辑态：隐藏 [!TYPE] 标记段。
+   用专门的类名而不是 :first-child —— 标题 widget 排在标记段前面，会是第一个子元素 */
+.milkdown .editor blockquote.ms-callout:not(.is-editing) .ms-callout-marker {
+  display: none;
+}
+/* 编辑态：藏掉标题行，露出原始标记让用户改类型 */
+.milkdown .editor blockquote.ms-callout.is-editing .ms-callout-title {
+  display: none;
+}
+
+.milkdown .editor blockquote.ms-callout-note {
+  background: var(--ms-callout-note-bg);
+  border-left-color: var(--ms-callout-note-border);
+}
+.milkdown .editor blockquote.ms-callout-note .ms-callout-title {
+  color: var(--ms-callout-note-title);
+}
+.milkdown .editor blockquote.ms-callout-tip {
+  background: var(--ms-callout-tip-bg);
+  border-left-color: var(--ms-callout-tip-border);
+}
+.milkdown .editor blockquote.ms-callout-tip .ms-callout-title {
+  color: var(--ms-callout-tip-title);
+}
+.milkdown .editor blockquote.ms-callout-important {
+  background: var(--ms-callout-important-bg);
+  border-left-color: var(--ms-callout-important-border);
+}
+.milkdown .editor blockquote.ms-callout-important .ms-callout-title {
+  color: var(--ms-callout-important-title);
+}
+.milkdown .editor blockquote.ms-callout-warning {
+  background: var(--ms-callout-warning-bg);
+  border-left-color: var(--ms-callout-warning-border);
+}
+.milkdown .editor blockquote.ms-callout-warning .ms-callout-title {
+  color: var(--ms-callout-warning-title);
+}
+.milkdown .editor blockquote.ms-callout-caution {
+  background: var(--ms-callout-caution-bg);
+  border-left-color: var(--ms-callout-caution-border);
+}
+.milkdown .editor blockquote.ms-callout-caution .ms-callout-title {
+  color: var(--ms-callout-caution-title);
 }
