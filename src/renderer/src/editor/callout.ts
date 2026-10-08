@@ -56,8 +56,11 @@ function buildState(
 
   for (const hit of hits) {
     const meta = calloutMeta(hit.type)
-    // 有焦点且选区落在块内 = 用户正在编辑或选中它，此时露出 [!TYPE] 源码
-    const editing = isBlockBeingEdited(focused, selection, hit.pos, hit.to)
+    // 「正在编辑」只看**标记段**（首段），不是整个引用块：
+    // 光标在内容段时若也切源码层，刚插入的提示块就会以源码形态出现
+    // （显示 [!NOTE]、没有标题行），用户看不到自己刚选的那一类。
+    // 要改类型就把光标移到标记段（首行）上。
+    const editing = isBlockBeingEdited(focused, selection, hit.pos + 1, hit.markerTo)
     parts.push(`${hit.pos}:${hit.type}:${editing ? 1 : 0}`)
 
     const classes = ['ms-callout', `ms-callout-${meta.slug}`]
