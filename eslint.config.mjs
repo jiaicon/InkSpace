@@ -18,5 +18,13 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'warn'
     }
   },
-  eslintConfigPrettier
+  eslintConfigPrettier,
+  {
+    // CommonJS 文件：Electron 的 preload 不支持 ESM，驱动脚本也以 CJS 跑在主进程里，
+    // require 是这些文件唯一可行的写法
+    files: ['**/*.cjs'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  }
 )
