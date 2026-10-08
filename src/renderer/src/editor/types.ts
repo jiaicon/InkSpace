@@ -74,4 +74,7 @@ export interface EditorHandle {
   replaceCurrent(replacement: string): void
   replaceAll(replacement: string): void
   clearSearch(): void
+
+  /** 重新渲染图表块（明暗主题切换后调用：mermaid 的配色内联在 SVG 里，改 CSS 无效） */
+  refreshDiagrams(): void
 }

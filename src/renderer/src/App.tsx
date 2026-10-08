@@ -207,6 +207,15 @@ export default function App() {
     upsertStyle('ms-code-theme', resolveHighlightTheme(appSettings?.highlightTheme, theme).css)
   }, [appSettings?.highlightTheme, theme])
 
+  // —— 明暗切换后重画图表 ——
+  // mermaid 的配色内联在 SVG 里，改 CSS 不生效，只能重新渲染（首次挂载不做，避免白跑一趟）
+  const prevThemeRef = useRef(theme)
+  useEffect(() => {
+    if (prevThemeRef.current === theme) return
+    prevThemeRef.current = theme
+    editorRef.current?.refreshDiagrams()
+  }, [theme])
+
   // —— Markdown 主题列表：内置 + 自定义（磁盘上的） ——
   const reloadThemes = useCallback(async () => {
     try {

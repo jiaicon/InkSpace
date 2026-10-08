@@ -104,7 +104,17 @@
       "Bash(sed -n '80,153p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")",
       "Bash(awk '{print \"UMD 包:\", int\\($5/1024/1024*10\\)/10 \"MB\"}')",
       "Bash(awk '{print $9, int\\($5/1024/1024\\)\"MB\"}')",
-      "Bash(node)"
+      "Bash(node)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/electron/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\('deps:', require\\('./package.json'\\).devDependencies.electron\\)\")",
+      "Bash(grep -Ev \"^npm warn|^$\")",
+      "Bash(rm -f node_modules/better-sqlite3/build/Release/_shadow.bak)",
+      "Bash(node_modules/electron/dist/electron.exe -e \"const D=require\\('better-sqlite3'\\); const d=new D\\(':memory:'\\); d.exec\\('create table t\\(x\\)'\\); d.prepare\\('insert into t values \\(1\\)'\\).run\\(\\); console.log\\('electron ABI load OK, rows =', d.prepare\\('select count\\(*\\) c from t'\\).get\\(\\).c\\); console.log\\('resolved binding =', require\\('bindings'\\)\\('better_sqlite3.node'\\).path || '\\(via better-sqlite3\\)'\\)\")",
+      "Bash(node_modules/electron/dist/electron.exe _verify-abi.cjs)",
+      "Bash(node _verify-abi.cjs)"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }

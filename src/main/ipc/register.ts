@@ -1,5 +1,4 @@
 import type Database from 'better-sqlite3'
-import { registerUserIpc } from '../modules/user'
 import { registerSystemIpc } from '../modules/system'
 import { registerWorkspaceIpc } from '../modules/workspace'
 import { registerFileIpc } from '../modules/file'
@@ -12,7 +11,6 @@ import { registerThemesIpc } from '../modules/themes'
  * 新增一个模块：只需在这里（以及 preload/index.ts）各加一行，main/index.ts 不动。
  */
 export function registerIpc(db: Database.Database): void {
-  registerUserIpc(db)
   registerSystemIpc()
   registerWorkspaceIpc(db)
   // settings 先建好再注入 file / export：图片落盘位置、导出主题都由设置决定

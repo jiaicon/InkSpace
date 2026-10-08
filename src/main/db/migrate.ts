@@ -1,11 +1,13 @@
 import type Database from 'better-sqlite3'
 import initSql from './migrations/001_init.sql?raw'
 import initFilesSql from './migrations/002_files.sql?raw'
+import dropUsersSql from './migrations/003_drop_users.sql?raw'
 
 // 迁移清单：按数组顺序执行，文件名记入 _migrations 表保证幂等
 const migrations: { name: string; sql: string }[] = [
   { name: '001_init.sql', sql: initSql },
-  { name: '002_files.sql', sql: initFilesSql }
+  { name: '002_files.sql', sql: initFilesSql },
+  { name: '003_drop_users.sql', sql: dropUsersSql }
 ]
 
 /** 执行尚未应用过的迁移 */

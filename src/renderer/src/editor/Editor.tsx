@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { createEditorController } from './controller'
 import { createMilkdownEditor, type MarkdownEditorAdapter } from './milkdownEditor'
 import { createCodeMirrorEditor, type SourceEditorAdapter } from './codemirrorEditor'
+import { refreshMermaidViews } from './mermaid'
 import { parseOutline } from './outline'
 import type { EditorHandle, EditorMode, EditorProps, SearchRequest } from './types'
 
@@ -156,7 +157,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     searchPrev: () => adapterRef.current?.searchPrev(),
     replaceCurrent: (replacement) => adapterRef.current?.replaceCurrent(replacement),
     replaceAll: (replacement) => adapterRef.current?.replaceAll(replacement),
-    clearSearch: () => adapterRef.current?.clearSearch()
+    clearSearch: () => adapterRef.current?.clearSearch(),
+    refreshDiagrams: () => refreshMermaidViews()
   }))
 
   // 有意只挂载一次：mount/emitOutline 仅依赖 ref，闭包不会过期；

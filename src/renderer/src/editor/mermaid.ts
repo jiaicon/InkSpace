@@ -66,6 +66,17 @@ async function renderDiagram(code: string): Promise<string> {
   return svg
 }
 
+/**
+ * 已挂载图表的「重画」回调集合。
+ * mermaid 的配色是内联在 SVG 里的，切换明暗主题时改 CSS 不起作用，必须重新渲染。
+ */
+const mountedDraws = new Set<() => void>()
+
+/** 重新渲染所有已挂载的图表（主题切换后由宿主调用） */
+export function refreshMermaidViews(): void {
+  for (const redraw of mountedDraws) redraw()
+}
+
 /** 代码块 node view：mermaid 渲染成图，其余语言保持默认结构 */
 export const codeBlockView = $view(codeBlockSchema.node, () => (node): NodeView => {
   // —— 普通代码块：复刻 Milkdown 默认的 <pre data-language><code> ——
@@ -135,6 +146,10 @@ export const codeBlockView = $view(codeBlockSchema.node, () => (node): NodeView 
   draw(node.textContent)
 
   let current = node
+  // 注册重画回调：切换明暗主题时要按新主题重新渲染（见 refreshMermaidViews）
+  const redraw = (): void => draw(current.textContent)
+  mountedDraws.add(redraw)
+
   return {
     dom: wrapper,
     contentDOM: code,
@@ -145,6 +160,9 @@ export const codeBlockView = $view(codeBlockSchema.node, () => (node): NodeView 
       if (next.textContent !== current.textContent) draw(next.textContent)
       current = next
       return true
+    },
+    destroy: () => {
+      mountedDraws.delete(redraw)
     },
     // 渲染层的变化不是文档编辑，只有源码层（contentDOM）里的才算
     ignoreMutation: (mutation: ViewMutationRecord) => !code.contains(mutation.target)
