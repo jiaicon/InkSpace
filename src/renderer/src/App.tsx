@@ -1023,6 +1023,7 @@ export default function App() {
                   onChangeDirty={() => {}}
                   onModeChange={setMode}
                   onRequestLink={requestLink}
+                  onRequestImage={requestImage}
                   onSearchInfo={handleSearchInfo}
                   searchRequest={searchRequest}
                 />

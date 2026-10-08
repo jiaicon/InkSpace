@@ -290,41 +290,64 @@ body {
   user-select: none;
 }
 
-/* 斜杠菜单（/ 呼出） */
+/* 斜杠菜单（/ 呼出）：按类别分块，块内条目横排 */
 .ms-slash-menu {
   position: fixed;
   z-index: 1000;
-  min-width: 220px;
-  max-height: 320px;
+  width: max-content;
+  min-width: 320px;
+  max-width: min(560px, calc(100vw - 16px));
+  max-height: 340px;
   overflow: auto;
-  padding: 6px;
+  padding: 8px;
   background: var(--ms-bg);
   border: 1px solid var(--ms-border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
 }
 .ms-slash-menu[data-show='false'] {
   display: none;
 }
-.ms-slash-item {
+.ms-slash-group + .ms-slash-group {
+  margin-top: 8px;
+}
+.ms-slash-group-title {
+  margin: 0 2px 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ms-text-secondary);
+  user-select: none;
+}
+.ms-slash-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ms-slash-item {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 5px 9px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
   color: var(--ms-text);
 }
-.ms-slash-item.is-active {
+.ms-slash-item:hover {
+  background: var(--ms-panel-bg);
+}
+.ms-slash-item.is-active,
+.ms-slash-item.is-active:hover {
   background: var(--ms-accent);
   color: #fff;
 }
 .ms-slash-icon {
-  width: 30px;
+  min-width: 20px;
   flex: none;
   font-family: var(--ms-font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ms-text-secondary);
   text-align: center;
@@ -333,7 +356,7 @@ body {
   color: rgba(255, 255, 255, 0.85);
 }
 .ms-slash-label {
-  flex: 1;
+  font-size: 13px;
 }
 
 /* 选中工具条 */

@@ -16,6 +16,8 @@ export interface EditorProps {
   onOutlineChange?: (outline: OutlineNode[]) => void
   /** 选中工具条「链接」按钮被点击时回调（宿主据此弹出链接对话框） */
   onRequestLink?: () => void
+  /** 斜杠菜单「图片」项被选中时回调（宿主据此弹出插入图片对话框） */
+  onRequestImage?: () => void
   /** 查找状态变化（匹配数/当前序号）时回调，供查找条展示 */
   onSearchInfo?: (info: SearchInfo) => void
   /**

@@ -24,6 +24,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     onModeChange,
     onOutlineChange,
     onRequestLink,
+    onRequestImage,
     onSearchInfo
   } = props
   const containerRef = useRef<HTMLDivElement>(null)
@@ -43,6 +44,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
   // 用 ref 保持 onRequestLink 最新，避免异步挂载时闭包过期
   const onRequestLinkRef = useRef(onRequestLink)
   onRequestLinkRef.current = onRequestLink
+
+  const onRequestImageRef = useRef(onRequestImage)
+  onRequestImageRef.current = onRequestImage
 
   const onSearchInfoRef = useRef(onSearchInfo)
   onSearchInfoRef.current = onSearchInfo
@@ -100,6 +104,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
             },
             {
               onRequestLink: () => onRequestLinkRef.current?.(),
+              onRequestImage: () => onRequestImageRef.current?.(),
               onSearchInfo: (info) => onSearchInfoRef.current?.(info)
             }
           )

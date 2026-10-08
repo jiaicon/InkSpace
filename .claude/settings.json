@@ -114,7 +114,11 @@
       "Bash(rm -f node_modules/better-sqlite3/build/Release/_shadow.bak)",
       "Bash(node_modules/electron/dist/electron.exe -e \"const D=require\\('better-sqlite3'\\); const d=new D\\(':memory:'\\); d.exec\\('create table t\\(x\\)'\\); d.prepare\\('insert into t values \\(1\\)'\\).run\\(\\); console.log\\('electron ABI load OK, rows =', d.prepare\\('select count\\(*\\) c from t'\\).get\\(\\).c\\); console.log\\('resolved binding =', require\\('bindings'\\)\\('better_sqlite3.node'\\).path || '\\(via better-sqlite3\\)'\\)\")",
       "Bash(node_modules/electron/dist/electron.exe _verify-abi.cjs)",
-      "Bash(node _verify-abi.cjs)"
+      "Bash(node _verify-abi.cjs)",
+      "Bash(npx vitest *)",
+      "Bash(grep -Ev \"^npm warn|^$|CJS build\")",
+      "Bash(VERIFY_SHOT=__TRACKED_VAR__/_verify-slash/menu.png env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe _verify-slash/main.cjs)",
+      "Bash(VERIFY_THEME=dark env -u ELECTRON_RUN_AS_NODE ../node_modules/electron/dist/electron.exe main.cjs)"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }

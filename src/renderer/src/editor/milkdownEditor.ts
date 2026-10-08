@@ -157,6 +157,8 @@ const placeholder = $prose(() => {
 
 export interface MilkdownEditorOptions {
   onRequestLink?: () => void
+  /** 斜杠菜单「图片」项被选中时回调（宿主弹出插入图片对话框） */
+  onRequestImage?: () => void
   onSearchInfo?: (info: SearchInfo) => void
 }
 
@@ -178,7 +180,7 @@ export async function createMilkdownEditor(
     .use(clipboard)
     .use(trailing)
     .use(placeholder)
-    .use(slashMenu)
+    .use(slashMenu({ onRequestImage: options.onRequestImage }))
     .use(selectionToolbar(options))
     .use(tableToolbar)
     .use(columnResizingPlugin)
