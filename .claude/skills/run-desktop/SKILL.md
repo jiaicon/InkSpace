@@ -21,9 +21,29 @@ env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe \
   .claude/skills/run-desktop/driver.cjs --script-file /tmp/cmds.txt
 ```
 
-## 用法
+## 两种跑法
 
-把命令按行写进脚本文件（`eval:` 里可以有分号，行内其余命令不适合塞分号），每条命令输出一行 JSON：
+**一次性脚本** —— 把命令按行写进文件，每条命令输出一行 JSON，跑完自动退出：
+
+```bash
+env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe \
+  .claude/skills/run-desktop/driver.cjs --script-file /tmp/cmds.txt
+```
+
+**交互式** —— 应用一直开着，往命令文件里**追加**一行就执行一行，省掉反复重启的 ~8 秒：
+
+```bash
+env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe \
+  .claude/skills/run-desktop/driver.cjs --watch-file /tmp/cmds.txt &
+echo 'open' >> /tmp/cmds.txt          # 追加即执行
+echo 'markdown' >> /tmp/cmds.txt
+echo 'quit'   >> /tmp/cmds.txt        # 结束
+```
+
+> 注意：**stdin 不可用** —— Electron 会把 stdin 吃掉，管道喂进去的命令一条都收不到（实测）。
+> 交互请用 `--watch-file`。
+
+命令示例（`eval:` 里可以有分号，命令行内其余部分不要塞分号）：
 
 ```
 doc:在这里输入斜杠。\n
@@ -40,10 +60,9 @@ ss:before-after
 quit
 ```
 
-也可以不给 `--script-file`，把命令按行从 stdin 喂进去。
-
 可选参数：`--doc <path>`（文档内容临时文件）、`--shot-dir <dir>`（截图目录）、
 `--settle <ms>`（每条命令后的等待，默认 400）。默认都落在系统 temp 下。
+整个过程有 180 秒硬超时（`--watch-file` 也受它保护），避免留下孤儿 Electron 进程。
 
 ## 命令
 

@@ -35,6 +35,9 @@ const argOf = (name, dflt) => {
 }
 
 const scriptFile = argOf('--script-file', null)
+// 交互式通道：盯住一个文件，往里追加命令行就执行，应用一直开着。
+// 为什么不用 stdin —— Electron 会把 stdin 吃掉（实测管道喂进去一条都收不到）。
+const watchFile = argOf('--watch-file', null)
 // 临时文件放系统 temp，别污染 skill 目录
 const docFile = argOf('--doc', path.join(os.tmpdir(), 'run-desktop-doc.md'))
 const shotDir = argOf('--shot-dir', path.join(os.tmpdir(), 'run-desktop-shots'))
@@ -220,10 +223,13 @@ function dispatch(line) {
 }
 
 async function run() {
-  const lines = scriptFile
-    ? fs.readFileSync(scriptFile, 'utf8').split(/\r?\n/)
-    : await readStdinLines()
+  if (watchFile) return runWatch()
+  if (!scriptFile) {
+    out({ error: '需要 --script-file 或 --watch-file（stdin 会被 Electron 吃掉，不可用）' })
+    return app.exit(2)
+  }
 
+  const lines = fs.readFileSync(scriptFile, 'utf8').split(/\r?\n/)
   for (const line of lines) {
     const res = await dispatch(line)
     if (!res) continue
@@ -233,12 +239,28 @@ async function run() {
   app.exit(0)
 }
 
-function readStdinLines() {
-  return new Promise((resolve) => {
-    let buf = ''
-    process.stdin.setEncoding('utf8')
-    process.stdin.on('data', (d) => (buf += d))
-    process.stdin.on('end', () => resolve(buf.split(/\r?\n/)))
-    process.stdin.resume()
-  })
+/** 逐行追加执行；写入 quit 结束。整体仍受开头的 180s 超时保护，避免留下孤儿进程 */
+async function runWatch() {
+  fs.writeFileSync(watchFile, '')
+  out({ watching: watchFile, hint: '往该文件追加命令行即执行；加一行 quit 结束' })
+  let consumed = 0
+  for (;;) {
+    let text = ''
+    try {
+      text = fs.readFileSync(watchFile, 'utf8')
+    } catch {
+      text = ''
+    }
+    const lines = text.split(/\r?\n/)
+    // 末尾换行会 split 出一个空元素，它不是「一条命令」；
+    // 若把它算进 consumed，下一条真正追加的命令就会被跳过（踩过这个 off-by-one）
+    const effective = text.endsWith('\n') ? lines.length - 1 : lines.length
+    for (let i = consumed; i < effective; i++) {
+      const res = await dispatch(lines[i])
+      if (res) out(res)
+      if (res && res.cmd === 'quit') return app.exit(0)
+    }
+    consumed = effective
+    await sleep(200)
+  }
 }
