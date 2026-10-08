@@ -6,15 +6,18 @@
  * 其余项保留短标签，并用 keywords 兜住中英文别名。
  */
 
-export type SlashGroup = 'heading' | 'list' | 'block' | 'insert'
+import { CALLOUTS, type CalloutMeta, type CalloutType } from '@shared/callout'
+
+export type SlashGroup = 'heading' | 'list' | 'block' | 'callout' | 'insert'
 
 /** 组的展示顺序（同时也是分组结果的顺序） */
-export const SLASH_GROUP_ORDER: SlashGroup[] = ['heading', 'list', 'block', 'insert']
+export const SLASH_GROUP_ORDER: SlashGroup[] = ['heading', 'list', 'block', 'callout', 'insert']
 
 export const SLASH_GROUP_LABELS: Record<SlashGroup, string> = {
   heading: '标题',
   list: '列表',
   block: '基础块',
+  callout: '提示块',
   insert: '插入'
 }
 
@@ -37,6 +40,32 @@ const headingItem = (level: number): SlashItemMeta => ({
   icon: `H${level}`,
   tooltip: `${CN_NUMERALS[level - 1]}级标题`,
   keywords: [`h${level}`, `heading ${level}`, `标题${level}`, '标题', 'bt']
+})
+
+/** callout 各类型的图标 / 提示文案 / 别名（与 CALLOUTS 的 type 一一对应） */
+const CALLOUT_UI: Record<CalloutType, { icon: string; tooltip: string; keywords: string[] }> = {
+  NOTE: { icon: 'ⓘ', tooltip: '提示块：值得注意的信息', keywords: ['note', 'alert', '提示', 'ts'] },
+  TIP: { icon: '✦', tooltip: '提示块：有用的建议', keywords: ['tip', '建议', 'jy'] },
+  IMPORTANT: {
+    icon: '❗',
+    tooltip: '提示块：必须知道的信息',
+    keywords: ['important', '重要', 'zy']
+  },
+  WARNING: { icon: '⚠', tooltip: '提示块：需要注意的风险', keywords: ['warning', '警告', 'jg'] },
+  CAUTION: { icon: '⛔', tooltip: '提示块：可能导致问题或损失', keywords: ['caution', '危险'] }
+}
+
+/**
+ * 条目 id 与 label 都由 CALLOUTS 派生 —— 与 slashMenu.ts 的动作键同源，
+ * 避免两边分叉导致「条目点了没反应」（动作表是按 id 查的，查不到会静默变成空操作）。
+ */
+const calloutItem = (meta: CalloutMeta): SlashItemMeta => ({
+  id: `callout-${meta.slug}`,
+  group: 'callout',
+  icon: CALLOUT_UI[meta.type].icon,
+  label: meta.title,
+  tooltip: CALLOUT_UI[meta.type].tooltip,
+  keywords: CALLOUT_UI[meta.type].keywords
 })
 
 export const slashItems: SlashItemMeta[] = [
@@ -105,6 +134,8 @@ export const slashItems: SlashItemMeta[] = [
     tooltip: '表格',
     keywords: ['table', 'grid', '表格', 'bg']
   },
+  // 提示块：排列上跟在基础块之后、插入组之前（实际组顺序由 SLASH_GROUP_ORDER 决定）
+  ...CALLOUTS.map(calloutItem),
   {
     id: 'math',
     group: 'insert',

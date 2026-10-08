@@ -14,6 +14,7 @@ import { $prose } from '@milkdown/kit/utils'
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import type { Node as ProseMirrorNode } from '@milkdown/kit/prose/model'
 import type { EditorView } from '@milkdown/kit/prose/view'
+import { CALLOUTS, calloutMarkerText, type CalloutType } from '@shared/callout'
 import { wrapInTaskListCommand } from './taskList'
 import { mathBlockSchema } from './math'
 import { MATH_BLOCK_PLACEHOLDER, MERMAID_BLOCK_TEMPLATE } from './slashContent'
@@ -112,9 +113,34 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
       manager().call(turnIntoTextCommand.key)
     }
 
+    /**
+     * 插入提示块：引用块含「标记段 + 空内容段」两段，光标**显式**落在内容段内部。
+     * 不能复用 replaceBlock —— 它把光标放在「块内容的末尾」，那是块的边界位置，
+     * 实测在引用块上会落到块外（敲字会新起一个段落），而 callout 恰恰需要一个空内容段。
+     */
+    const insertCallout = (type: CalloutType) => {
+      if (!view) return
+      const { state } = view
+      const { $from } = state.selection
+      const { schema } = state
+      const marker = schema.nodes.paragraph.create(null, schema.text(calloutMarkerText(type)))
+      const body = schema.nodes.paragraph.create()
+      const quote = schema.nodes.blockquote.create(null, [marker, body])
+      const start = $from.before($from.depth)
+      const end = $from.after($from.depth)
+      const tr = state.tr.replaceWith(start, end, quote)
+      // 跳过 blockquote 起始(+1)与标记段，再 +1 进入内容段内部
+      tr.setSelection(TextSelection.create(tr.doc, start + 1 + marker.nodeSize + 1))
+      view.dispatch(tr)
+    }
+
     const actions: Record<string, () => void> = {
       // 退路：把当前块从标题 / 列表 / 引用里退回普通段落
       text: toParagraph,
+      // 提示块：键名与 slashItems.ts 的条目 id 同源于 CALLOUTS，两边不会分叉
+      ...Object.fromEntries(
+        CALLOUTS.map((c) => [`callout-${c.slug}`, () => insertCallout(c.type)] as const)
+      ),
       bullet: () => manager().call(wrapInBulletListCommand.key),
       ordered: () => manager().call(wrapInOrderedListCommand.key),
       task: () => manager().call(wrapInTaskListCommand.key),

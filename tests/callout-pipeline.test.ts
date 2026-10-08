@@ -28,4 +28,13 @@ describe('导出管线的 callout', () => {
     const html = await renderMarkdownToHtml('> [!NOTE]\n>\n> ```js\n> const a = 1\n> ```\n')
     expect(html).toContain('class="hljs language-js"')
   })
+
+  it('编辑器实际写出的转义形式（\\[!WARNING]）同样识别', async () => {
+    // Milkdown 序列化时会把行首的 [ 转义成 \[（避免被当成链接语法）。
+    // 这是编辑器真正存到 .md 里的形式，导出侧必须照样认出来。
+    const html = await renderMarkdownToHtml('> \\[!WARNING]\n>\n> 注意风险\n')
+    expect(html).toContain('<div class="callout callout-warning">')
+    expect(html).toContain('<p class="callout-title">警告</p>')
+    expect(html).not.toContain('[!WARNING]')
+  })
 })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  SLASH_GROUP_LABELS,
   SLASH_GROUP_ORDER,
   filterSlashItems,
   groupSlashItems,
@@ -58,9 +59,13 @@ describe('groupSlashItems', () => {
     expect(groups.map((g) => g.label)).toEqual(['标题', '列表', '插入'])
   })
 
-  it('空组被丢弃（样本里没有 基础块）', () => {
+  it('空组被丢弃（样本里没有的组不出现）', () => {
     const groups = groupSlashItems(sample)
-    expect(groups.map((g) => g.group)).toEqual(SLASH_GROUP_ORDER.filter((g) => g !== 'block'))
+    // 期望值从样本自身推导，而不是写死「除某组之外的全部组」——
+    // 否则以后新增一个分组（如 callout）时这条断言会无故失败
+    expect(groups.map((g) => g.group)).toEqual(
+      SLASH_GROUP_ORDER.filter((g) => sample.some((i) => i.group === g))
+    )
   })
 
   it('组内保持输入顺序', () => {
@@ -122,5 +127,39 @@ describe('补齐的已有能力', () => {
     expect(ids('tp')).toEqual(['image']) // 图片
     expect(ids('fgx')).toEqual(['hr']) // 分割线
     expect(ids('yy')).toEqual(['quote']) // 引用
+  })
+})
+
+describe('提示块面板项', () => {
+  it('5 种 callout 各一项，归在 callout 组', () => {
+    const ids = [
+      'callout-note',
+      'callout-tip',
+      'callout-important',
+      'callout-warning',
+      'callout-caution'
+    ]
+    for (const id of ids) {
+      const item = slashItems.find((i) => i.id === id)
+      expect(item, `${id} 应存在`).toBeDefined()
+      expect(item!.group).toBe('callout')
+      expect(item!.label).toBeTruthy()
+    }
+  })
+
+  it('callout 组排在基础块之后、插入之前', () => {
+    expect(SLASH_GROUP_ORDER).toEqual(['heading', 'list', 'block', 'callout', 'insert'])
+    expect(SLASH_GROUP_LABELS.callout).toBe('提示块')
+  })
+
+  it('新增别名精确命中，不与既有别名撞车', () => {
+    const ids = (q: string) => filterSlashItems(slashItems, q).map((i) => i.id)
+    expect(ids('ts')).toEqual(['callout-note'])
+    expect(ids('jy')).toEqual(['callout-tip'])
+    expect(ids('zy')).toEqual(['callout-important'])
+    expect(ids('jg')).toEqual(['callout-warning'])
+    expect(ids('caution')).toEqual(['callout-caution'])
+    // 「危险」刻意不给 wx —— 否则会与「无序列表」的 wxlb 歧义命中
+    expect(ids('wx')).toEqual(['bullet'])
   })
 })
