@@ -96,3 +96,24 @@ export interface MarkdownThemeInfo {
   /** 内置主题写在代码里，自定义主题来自 userData/themes/<id>/ */
   builtin: boolean
 }
+
+/** 全局搜索的一条命中：行号从 1 起；text 是裁剪过的上下文，column 是命中在该文本里的起始列 */
+export interface SearchMatch {
+  line: number
+  text: string
+  column: number
+}
+
+/** 全局搜索中某个文件的全部命中 */
+export interface SearchFileResult {
+  path: string
+  name: string
+  matches: SearchMatch[]
+}
+
+/** 全局搜索结果；truncated 表示命中数达到上限、结果被截断 */
+export interface SearchResponse {
+  files: SearchFileResult[]
+  totalMatches: number
+  truncated: boolean
+}

@@ -11,6 +11,7 @@ export const IPC = {
   workspacePick: 'workspace:pick',
   workspaceLast: 'workspace:last',
   workspaceTree: 'workspace:tree',
+  workspaceSearch: 'workspace:search',
   recentList: 'recent:list',
   recentAdd: 'recent:add',
   recentRemove: 'recent:remove',

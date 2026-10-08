@@ -807,3 +807,106 @@ html[data-theme='dark'] .ms-sider .ant-tree .ant-tree-treenode:hover {
 .ms-math-block.is-editing .ms-math-src {
   display: block;
 }
+
+/* ==========================================================================
+   全局搜索（侧栏「搜索」页）
+   ========================================================================== */
+
+.ms-search {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 8px;
+  gap: 6px;
+  overflow: hidden;
+}
+.ms-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ms-search-bar .ant-input-affix-wrapper {
+  flex: 1;
+}
+.ms-search-case {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 4px;
+  color: var(--ms-text-secondary);
+  cursor: pointer;
+}
+.ms-search-case:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.ms-search-case.is-on {
+  color: var(--ms-accent);
+  background: var(--ms-panel-bg);
+}
+.ms-search-summary {
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--ms-text-secondary);
+}
+.ms-search-empty {
+  padding: 8px 2px;
+  font-size: 12px;
+  color: var(--ms-text-secondary);
+}
+.ms-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.ms-search-file {
+  margin-bottom: 6px;
+}
+.ms-search-filename {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ms-heading);
+  background: var(--ms-sidebar-bg);
+}
+.ms-search-filecount {
+  font-weight: 400;
+  color: var(--ms-text-secondary);
+}
+.ms-search-hit {
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px 2px 10px;
+  border-radius: 4px;
+  font-family: var(--ms-font-mono);
+  font-size: 12px;
+  color: var(--ms-text);
+  white-space: pre;
+  cursor: pointer;
+}
+.ms-search-hit:hover {
+  background: var(--ms-panel-bg);
+}
+.ms-search-lineno {
+  flex: none;
+  min-width: 26px;
+  text-align: right;
+  color: var(--ms-text-secondary);
+}
+.ms-search-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-search-text mark {
+  background: color-mix(in srgb, var(--ms-accent) 30%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}

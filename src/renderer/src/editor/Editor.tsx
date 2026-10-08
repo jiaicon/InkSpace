@@ -3,9 +3,16 @@ import { createEditorController } from './controller'
 import { createMilkdownEditor, type MarkdownEditorAdapter } from './milkdownEditor'
 import { createCodeMirrorEditor, type SourceEditorAdapter } from './codemirrorEditor'
 import { parseOutline } from './outline'
-import type { EditorHandle, EditorMode, EditorProps } from './types'
+import type { EditorHandle, EditorMode, EditorProps, SearchRequest } from './types'
 
 type Adapter = MarkdownEditorAdapter | SourceEditorAdapter
+
+/** 把宿主的查找请求应用到适配器：先设置条件（会选中第一条），再前进到指定的那一条 */
+function applySearchRequest(adapter: Adapter | null, req: SearchRequest | null | undefined): void {
+  if (!adapter || !req) return
+  adapter.search({ query: req.query, caseSensitive: req.caseSensitive })
+  for (let i = 0; i < req.occurrence; i++) adapter.searchNext()
+}
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(props, ref) {
   const {
@@ -38,6 +45,25 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
 
   const onSearchInfoRef = useRef(onSearchInfo)
   onSearchInfoRef.current = onSearchInfo
+
+  // 宿主发起的查找请求：挂载完成后重放一次，避免「刚打开文件时编辑器还没挂载」
+  const { searchRequest } = props
+  const searchRequestRef = useRef<SearchRequest | null | undefined>(searchRequest)
+  searchRequestRef.current = searchRequest
+  // 同一条请求只应用一次：否则之后打开别的文件、或切换编辑模式重新挂载时，
+  // 会把上次的搜索又套到新文档上
+  const appliedSearchRef = useRef<SearchRequest | null>(null)
+
+  const applyPendingSearch = (adapter: Adapter | null): void => {
+    const req = searchRequestRef.current
+    if (!adapter || !req || appliedSearchRef.current === req) return
+    appliedSearchRef.current = req
+    applySearchRequest(adapter, req)
+  }
+
+  useEffect(() => {
+    applyPendingSearch(adapterRef.current)
+  }, [searchRequest])
 
   // 图片解析所需的文档目录：挂载时读 ref，切换文档时由下面的 effect 立刻同步给已有实例
   const docDirRef = useRef<string | null>(docDir ?? null)
@@ -95,6 +121,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(prop
     // 异步挂载期间若内容已被 setMarkdown 切换到另一文件，补同步，避免展示旧文件内容
     const latest = controller.getMarkdown()
     if (latest !== md) adapter.setContent(latest)
+    // 内容就位后再应用宿主发起的查找（此刻才找得到正确的匹配）
+    applyPendingSearch(adapter)
   }
 
   function switchMode(mode: EditorMode): void {

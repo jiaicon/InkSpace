@@ -3,6 +3,7 @@ import type { FileTreeNode, RecentFile } from '@shared/types'
 import type { OutlineNode } from '../editor'
 import { FileTree } from './FileTree'
 import { Outline } from './Outline'
+import { SearchPanel } from './SearchPanel'
 
 interface SidebarProps {
   workspacePath: string | null
@@ -10,6 +11,9 @@ interface SidebarProps {
   recent: RecentFile[]
   activePath: string | null
   outline: OutlineNode[]
+  /** 当前标签页（受控，便于 Ctrl+Shift+F 切到搜索） */
+  tab: string
+  onTabChange(tab: string): void
   onOpenWorkspace(): void
   onOpenFileDialog(): void
   onOpenFile(path: string): void
@@ -19,9 +23,10 @@ interface SidebarProps {
   onReveal(path: string): void
   onClearRecent(): void
   onJumpOutline(index: number): void
+  onOpenSearchResult(path: string, query: string, caseSensitive: boolean, occurrence: number): void
 }
 
-/** 左侧栏：文件 + 大纲 两个标签页（Typora 式） */
+/** 左侧栏：文件 + 大纲 + 搜索 三个标签页（Typora 式） */
 export function Sidebar(props: SidebarProps) {
   const items = [
     {
@@ -48,6 +53,17 @@ export function Sidebar(props: SidebarProps) {
       key: 'outline',
       label: '大纲',
       children: <Outline outline={props.outline} onJump={props.onJumpOutline} />
+    },
+    {
+      key: 'search',
+      label: '搜索',
+      children: (
+        <SearchPanel
+          workspacePath={props.workspacePath}
+          active={props.tab === 'search'}
+          onOpenResult={props.onOpenSearchResult}
+        />
+      )
     }
   ]
 
@@ -58,6 +74,8 @@ export function Sidebar(props: SidebarProps) {
     >
       <Tabs
         size="small"
+        activeKey={props.tab}
+        onChange={props.onTabChange}
         items={items}
         tabBarStyle={{ margin: 0, padding: '0 8px' }}
         style={{ height: '100%' }}

@@ -28,7 +28,7 @@ import {
 import type { AppSettings, MarkdownThemeInfo, ThemeMode } from '@shared/types'
 import { resolveHighlightTheme } from '@shared/highlightThemes'
 import { Editor, parseOutline } from './editor'
-import type { EditorHandle, EditorMode, SearchInfo } from './editor'
+import type { EditorHandle, EditorMode, SearchInfo, SearchRequest } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
 import { titleFromPath, dirname } from './utils/path'
 import { classifyDroppedPaths } from './utils/drop'
@@ -125,6 +125,9 @@ export default function App() {
   const [findOpen, setFindOpen] = useState(false)
   const [findReplaceOpen, setFindReplaceOpen] = useState(false)
   const [findInfo, setFindInfo] = useState<SearchInfo>({ total: 0, current: 0 })
+  // —— 侧栏标签页与全局搜索跳转 ——
+  const [sidebarTab, setSidebarTab] = useState('files')
+  const [searchRequest, setSearchRequest] = useState<SearchRequest | null>(null)
   // Markdown 主题列表（内置 + userData/themes 下的自定义）
   const [themes, setThemes] = useState<MarkdownThemeInfo[]>([])
   // 磁盘上的主题可能被用户直接编辑，用版本号强制重新读取 CSS
@@ -728,6 +731,15 @@ export default function App() {
   const findReplaceAll = useCallback((text: string) => editorRef.current?.replaceAll(text), [])
   const handleSearchInfo = useCallback((info: SearchInfo) => setFindInfo(info), [])
 
+  /** 点全局搜索结果：打开文件后交给编辑器应用查找（编辑器挂载完成时才生效） */
+  const openSearchResult = useCallback(
+    async (path: string, query: string, caseSensitive: boolean, occurrence: number) => {
+      await openFile(path)
+      setSearchRequest({ query, caseSensitive, occurrence })
+    },
+    [openFile]
+  )
+
   // 切换文档时关掉查找，避免高亮停留在别的文档上
   useEffect(() => {
     closeFind()
@@ -753,7 +765,12 @@ export default function App() {
           break
         case 'f':
           e.preventDefault()
-          openFind(false)
+          if (e.shiftKey) {
+            // Ctrl+Shift+F：切到侧栏搜索页（切过去后由 SearchPanel 自己聚焦输入框）
+            setSidebarTab('search')
+          } else {
+            openFind(false)
+          }
           break
         case 'h':
           e.preventDefault()
@@ -864,6 +881,8 @@ export default function App() {
             recent={recent}
             activePath={activePath}
             outline={outline}
+            tab={sidebarTab}
+            onTabChange={setSidebarTab}
             onOpenWorkspace={openWorkspace}
             onOpenFileDialog={openFileDialog}
             onOpenFile={openFile}
@@ -873,6 +892,9 @@ export default function App() {
             onReveal={(path) => fileApi.reveal(path).catch((e) => message.error(String(e)))}
             onClearRecent={clearRecent}
             onJumpOutline={(i) => editorRef.current?.scrollToHeading(i)}
+            onOpenSearchResult={(path, query, caseSensitive, occurrence) => {
+              void openSearchResult(path, query, caseSensitive, occurrence)
+            }}
           />
         </Layout.Sider>
 
@@ -993,6 +1015,7 @@ export default function App() {
                   onModeChange={setMode}
                   onRequestLink={requestLink}
                   onSearchInfo={handleSearchInfo}
+                  searchRequest={searchRequest}
                 />
               ) : (
                 <Welcome

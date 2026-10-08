@@ -5,6 +5,7 @@ export type {
   EditorProps,
   OutlineNode,
   SearchInfo,
-  SearchOptions
+  SearchOptions,
+  SearchRequest
 } from './types'
 export { parseOutline } from './outline'

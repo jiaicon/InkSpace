@@ -18,6 +18,11 @@ export interface EditorProps {
   onRequestLink?: () => void
   /** 查找状态变化（匹配数/当前序号）时回调，供查找条展示 */
   onSearchInfo?: (info: SearchInfo) => void
+  /**
+   * 宿主发起的查找请求（如点全局搜索结果跳转）。
+   * 编辑器挂载完成后才应用，避免「刚打开文件时编辑器还没挂载、查找落空」。
+   */
+  searchRequest?: SearchRequest | null
 }
 
 /** 查找条件 */
@@ -30,6 +35,17 @@ export interface SearchOptions {
 export interface SearchInfo {
   total: number
   current: number
+}
+
+/**
+ * 由宿主发起的查找请求（如点全局搜索结果跳转）。
+ * 每次请求都是新对象——重复点同一条结果也会重新跳一次。
+ */
+export interface SearchRequest {
+  query: string
+  caseSensitive: boolean
+  /** 前进到该文件里的第几条匹配（0 起） */
+  occurrence: number
 }
 
 export interface EditorHandle {

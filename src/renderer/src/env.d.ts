@@ -10,7 +10,8 @@ import type {
   WorkspaceInfo,
   ExportRequest,
   AppSettings,
-  MarkdownThemeInfo
+  MarkdownThemeInfo,
+  SearchResponse
 } from '@shared/types'
 
 declare global {
@@ -29,6 +30,11 @@ declare global {
         pick: () => Promise<IpcResult<WorkspaceInfo | null>>
         last: () => Promise<IpcResult<string | null>>
         tree: (root: string) => Promise<IpcResult<FileTreeNode[]>>
+        search: (
+          root: string,
+          query: string,
+          caseSensitive: boolean
+        ) => Promise<IpcResult<SearchResponse>>
         recentList: () => Promise<IpcResult<RecentFile[]>>
         recentAdd: (path: string, title: string) => Promise<IpcResult<void>>
         recentRemove: (path: string) => Promise<IpcResult<void>>
