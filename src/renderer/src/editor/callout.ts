@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import { calloutMeta, parseCalloutMarker, type CalloutType } from '@shared/callout'
+import { isBlockBeingEdited, trackEditorFocus } from './blockEditing'
 
 export interface CalloutHit {
   pos: number
@@ -41,17 +42,22 @@ export function collectCallouts(doc: CalloutDocLike): CalloutHit[] {
 interface CalloutState {
   deco: DecorationSet
   key: string
+  focused: boolean
 }
 
-function buildState(doc: PMNode, selection: { from: number; to: number }): CalloutState {
+function buildState(
+  doc: PMNode,
+  selection: { from: number; to: number },
+  focused: boolean
+): CalloutState {
   const hits = collectCallouts(doc)
   const decos: Decoration[] = []
   const parts: string[] = []
 
   for (const hit of hits) {
     const meta = calloutMeta(hit.type)
-    // 选区落在块内 = 用户正在编辑或选中它，此时露出 [!TYPE] 源码
-    const editing = selection.from >= hit.pos && selection.to <= hit.to
+    // 有焦点且选区落在块内 = 用户正在编辑或选中它，此时露出 [!TYPE] 源码
+    const editing = isBlockBeingEdited(focused, selection, hit.pos, hit.to)
     parts.push(`${hit.pos}:${hit.type}:${editing ? 1 : 0}`)
 
     const classes = ['ms-callout', `ms-callout-${meta.slug}`]
@@ -79,22 +85,32 @@ function buildState(doc: PMNode, selection: { from: number; to: number }): Callo
     }
   }
 
-  return { deco: DecorationSet.create(doc, decos), key: parts.join('|') }
+  return {
+    deco: DecorationSet.create(doc, decos),
+    key: `${focused ? 'f' : 'b'}|${parts.join('|')}`,
+    focused
+  }
 }
 
 export const calloutPlugin = $prose(() => {
   const key = new PluginKey<CalloutState>('MS_CALLOUT')
+  const focusMeta = 'MS_CALLOUT_FOCUS'
+
   return new Plugin({
     key,
     state: {
-      init: (_config, state) => buildState(state.doc, state.selection),
+      init: (_config, state) => buildState(state.doc, state.selection, false),
       apply: (tr, prev, _old, next) => {
-        if (!tr.docChanged && !tr.selectionSet) return prev
-        const built = buildState(next.doc, next.selection)
-        // 结构没变就复用旧装饰集，避免每次按键都重建 widget DOM
+        const meta = tr.getMeta(focusMeta) as boolean | undefined
+        const focused = meta === undefined ? prev.focused : meta
+        if (!tr.docChanged && !tr.selectionSet && meta === undefined) return prev
+        const built = buildState(next.doc, next.selection, focused)
+        // 焦点、结构、编辑态都没变就复用旧装饰集，避免每次按键都重建 widget DOM
         return built.key === prev.key ? prev : built
       }
     },
+    // 只有焦点变化会通过 meta 事务进来，这里只负责在挂载/卸载时接上与摘掉监听
+    view: (v) => ({ destroy: trackEditorFocus(v, focusMeta) }),
     props: {
       decorations: (state) => key.getState(state)?.deco ?? null
     }

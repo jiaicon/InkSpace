@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TOC_MARKER, buildTocTree, isTocParagraph } from '../src/shared/toc'
+import { TOC_MARKER, buildTocTree, flattenTocTree, isTocParagraph } from '../src/shared/toc'
 import {
   collectHeadings,
   type HeadingDocLike,
@@ -48,6 +48,39 @@ describe('buildTocTree', () => {
 
   it('空输入返回空数组', () => {
     expect(buildTocTree([])).toEqual([])
+  })
+})
+
+describe('flattenTocTree', () => {
+  it('先序遍历顺序 = 原始输入顺序（目录下标靠这条不变量对上标题下标）', () => {
+    const entries = [
+      { level: 1, text: 'a' },
+      { level: 3, text: 'b' },
+      { level: 2, text: 'c' },
+      { level: 1, text: 'd' },
+      { level: 2, text: 'e' }
+    ]
+    expect(flattenTocTree(buildTocTree(entries)).map((n) => n.text)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e'
+    ])
+  })
+
+  it('展平出来的是树里的同一批对象（点击时按下标回查必须能命中）', () => {
+    const tree = buildTocTree([
+      { level: 1, text: 'a' },
+      { level: 2, text: 'b' }
+    ])
+    const flat = flattenTocTree(tree)
+    expect(flat).toHaveLength(2)
+    expect(flat[1]).toBe(tree[0].children[0])
+  })
+
+  it('空数组返回空数组', () => {
+    expect(flattenTocTree([])).toEqual([])
   })
 })
 

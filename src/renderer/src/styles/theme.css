@@ -1076,3 +1076,40 @@ html[data-theme='dark'] .ms-mermaid .ms-mermaid-render.is-error {
 .milkdown .editor blockquote.ms-callout-caution .ms-callout-title {
   color: var(--ms-callout-caution-title);
 }
+
+/* 文档内目录（[TOC] 段落 + widget 渲染的列表） */
+.milkdown .ms-toc:not(.is-editing) {
+  display: none; /* 渲染层：原文让位给 widget */
+}
+.milkdown .ms-toc-list {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border: 1px solid var(--ms-border);
+  border-radius: 6px;
+  background: var(--ms-panel-bg);
+  user-select: none;
+}
+.milkdown .ms-toc-list ul {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style: none;
+}
+.milkdown .ms-toc-list > ul {
+  padding-left: 0;
+}
+.milkdown .ms-toc-list li {
+  margin: 0.25em 0;
+}
+.milkdown .ms-toc-list a {
+  color: var(--ms-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.milkdown .ms-toc-list a:hover {
+  color: var(--ms-accent);
+  text-decoration: underline;
+}
+.milkdown .ms-toc-empty {
+  color: var(--ms-text-secondary);
+  font-style: italic;
+}

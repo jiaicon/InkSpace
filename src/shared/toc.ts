@@ -35,3 +35,22 @@ export function buildTocTree<T extends { level: number }>(entries: readonly T[])
   }
   return roots
 }
+
+/**
+ * 按先序遍历展平目录树 —— 先序顺序就是原始标题的文档顺序。
+ *
+ * 编辑器靠这条不变量把目录条目的下标对上 `querySelectorAll('h1..h6')` 的下标。
+ * 注意：`buildTocTree` 会为每个条目**新建对象**，所以不能拿原始标题对象做身份查表，
+ * 必须从这棵树的展平结果里取下标。
+ */
+export function flattenTocTree<T>(nodes: TocTreeNode<T>[]): TocTreeNode<T>[] {
+  const flat: TocTreeNode<T>[] = []
+  const walk = (list: TocTreeNode<T>[]): void => {
+    for (const node of list) {
+      flat.push(node)
+      walk(node.children)
+    }
+  }
+  walk(nodes)
+  return flat
+}

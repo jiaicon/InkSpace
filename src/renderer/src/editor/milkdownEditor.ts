@@ -17,6 +17,7 @@ import { imageView, setImageDocDir } from './imageView'
 import { codeHighlight } from './codeHighlight'
 import { mathPlugins } from './math'
 import { calloutPlugin } from './callout'
+import { tocPlugin } from './toc'
 import { mermaidPlugins } from './mermaid'
 import {
   search as searchPlugin,
@@ -191,6 +192,7 @@ export async function createMilkdownEditor(
     .use(codeHighlight)
     .use(mathPlugins)
     .use(calloutPlugin)
+    .use(tocPlugin)
     .use(mermaidPlugins)
     .use(searchExtension)
     .use(searchReporter)
