@@ -15,6 +15,7 @@ import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import type { Node as ProseMirrorNode } from '@milkdown/kit/prose/model'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import { CALLOUTS, calloutMarkerText, type CalloutType } from '@shared/callout'
+import { TOC_MARKER } from '@shared/toc'
 import { wrapInTaskListCommand } from './taskList'
 import { mathBlockSchema } from './math'
 import { MATH_BLOCK_PLACEHOLDER, MERMAID_BLOCK_TEMPLATE } from './slashContent'
@@ -160,7 +161,23 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
         if (!codeBlock) return
         replaceBlock(codeBlock.create({ language: 'mermaid' }, schema.text(MERMAID_BLOCK_TEMPLATE)))
       },
-      image: () => options.onRequestImage?.()
+      image: () => options.onRequestImage?.(),
+      // 目录：插一个内容为 [TOC] 的段落 + 一个空段落，光标落在空段落
+      //（不落在 [TOC] 段里：落在里面会立刻进入源码层，看到的是原文而不是目录）
+      toc: () => {
+        if (!view) return
+        const { state } = view
+        const { $from } = state.selection
+        const { schema } = state
+        const tocPara = schema.nodes.paragraph.create(null, schema.text(TOC_MARKER))
+        const after = schema.nodes.paragraph.create()
+        const start = $from.before($from.depth)
+        const end = $from.after($from.depth)
+        const tr = state.tr.replaceWith(start, end, [tocPara, after])
+        // tocPara.nodeSize 跳过整个段落，+1 进入空段落内部
+        tr.setSelection(TextSelection.create(tr.doc, start + tocPara.nodeSize + 1))
+        view.dispatch(tr)
+      }
     }
     for (let level = 1; level <= 6; level++) {
       actions[`h${level}`] = () => manager().call(wrapInHeadingCommand.key, level)

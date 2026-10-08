@@ -163,3 +163,18 @@ describe('提示块面板项', () => {
     expect(ids('wx')).toEqual(['bullet'])
   })
 })
+
+describe('目录面板项', () => {
+  it('有一项 [TOC]，归在插入组', () => {
+    const item = slashItems.find((i) => i.id === 'toc')
+    expect(item, 'toc 项应存在').toBeDefined()
+    expect(item!.label).toBe('目录')
+    expect(item!.group).toBe('insert')
+  })
+
+  it('别名 ml / toc 精确命中', () => {
+    const ids = (q: string) => filterSlashItems(slashItems, q).map((i) => i.id)
+    expect(ids('ml')).toEqual(['toc'])
+    expect(ids('toc')).toEqual(['toc'])
+  })
+})

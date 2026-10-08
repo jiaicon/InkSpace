@@ -35,4 +35,13 @@ describe('导出管线的 TOC', () => {
     const html = await renderMarkdownToHtml('[TOC]\n\n正文\n')
     expect(html).toContain('<nav class="toc"></nav>')
   })
+
+  it('编辑器实际写出的转义形式（\\[TOC]）同样识别', async () => {
+    // Milkdown 序列化会把行首的 [ 转义成 \[ —— 这是编辑器真正存进 .md 的形式，
+    // 导出侧必须照样认出来（与 callout 的 \[!TYPE] 是同一回事）
+    const html = await renderMarkdownToHtml('\\[TOC]\n\n# 标题\n')
+    expect(html).toContain('<nav class="toc">')
+    expect(html).toContain('href="#标题"')
+    expect(html).not.toContain('[TOC]')
+  })
 })

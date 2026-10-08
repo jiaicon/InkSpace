@@ -159,6 +159,15 @@ export const slashItems: SlashItemMeta[] = [
     label: '图片',
     tooltip: '图片',
     keywords: ['image', 'picture', 'img', '图片', 'tp']
+  },
+  {
+    id: 'toc',
+    group: 'insert',
+    icon: '☰',
+    label: '目录',
+    tooltip: '插入文档目录（[TOC]）',
+    // 刻意不放 'contents'：它内含 'ts'，会让查询 ts 同时命中「提示」，产生歧义
+    keywords: ['toc', '目录', 'ml']
   }
 ]
 
