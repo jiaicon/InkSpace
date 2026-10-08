@@ -13,14 +13,14 @@ const code = (text: string): TocBlockLike => ({
 })
 
 describe('collectTocTargets', () => {
-  it('收集根层 [TOC] 段落的序号、位置与长度', () => {
+  it('收集根层 [TOC] 段落的位置与长度', () => {
     const blocks = [para('正文'), para('[TOC]'), para('后面')]
     // '正文' nodeSize = 4 → 第二块 pos = 4；'[TOC]' nodeSize = 7 → to = 11
-    expect(collectTocTargets(blocks)).toEqual([{ index: 1, pos: 4, to: 11 }])
+    expect(collectTocTargets(blocks)).toEqual([{ pos: 4, to: 11 }])
   })
 
   it('大小写与前后空白容错', () => {
-    expect(collectTocTargets([para(' [toc] ')])).toEqual([{ index: 0, pos: 0, to: 9 }])
+    expect(collectTocTargets([para(' [toc] ')])).toEqual([{ pos: 0, to: 9 }])
   })
 
   it('夹着别的文字不算', () => {
@@ -33,6 +33,7 @@ describe('collectTocTargets', () => {
 
   it('多个 [TOC] 都收集', () => {
     const blocks = [para('[TOC]'), para('x'), para('[TOC]')]
-    expect(collectTocTargets(blocks).map((t) => t.index)).toEqual([0, 2])
+    // 第一块 nodeSize 7、第二块 3 → 两个占位段分别落在 pos 0 与 10
+    expect(collectTocTargets(blocks).map((t) => t.pos)).toEqual([0, 10])
   })
 })

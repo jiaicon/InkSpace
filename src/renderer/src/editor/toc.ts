@@ -15,9 +15,9 @@ export interface TocBlockLike {
 }
 
 export interface TocRange {
-  /** 该块在顶层块数组里的下标 */
-  index: number
+  /** 段落起始位置 */
   pos: number
+  /** 段落结束位置 */
   to: number
 }
 
@@ -30,12 +30,12 @@ export interface TocRange {
 export function collectTocTargets(blocks: readonly TocBlockLike[]): TocRange[] {
   const targets: TocRange[] = []
   let pos = 0
-  blocks.forEach((block, index) => {
+  for (const block of blocks) {
     if (block.type.name === 'paragraph' && isTocParagraph(block.textContent)) {
-      targets.push({ index, pos, to: pos + block.nodeSize })
+      targets.push({ pos, to: pos + block.nodeSize })
     }
     pos += block.nodeSize
-  })
+  }
   return targets
 }
 
