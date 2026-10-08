@@ -77,4 +77,20 @@ describe('transformCallouts', () => {
     expect(outer.tagName).toBe('blockquote')
     expect(outer.children![0].tagName).toBe('div')
   })
+
+  it('真实管线形状：块之间有空白文本节点时仍能识别', () => {
+    // remark-rehype 会在块之间插入 "\n" 文本节点，children[0] 并不是段落。
+    // 手写 fixture 很容易漏掉这点，所以这条测试按真实形状构造。
+    const blank: HastNode = { type: 'text', value: '\n' }
+    const tree = root(quote(blank, p(text('[!NOTE]')), blank, p(text('内容')), blank))
+    transformCallouts(tree)
+
+    const div = tree.children![0]
+    expect(div.tagName).toBe('div')
+    expect(div.properties?.className).toEqual(['callout', 'callout-note'])
+    // div 直接子节点里的空白无意义：应丢掉标记段，也丢掉空白
+    expect(div.children!.map((c) => c.tagName)).toEqual(['p', 'p'])
+    expect(div.children![0].children![0].value).toBe('提示')
+    expect(div.children![1].children![0].value).toBe('内容')
+  })
 })

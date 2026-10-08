@@ -303,3 +303,58 @@ body {
     break-inside: avoid;
   }
 }
+
+/* 提示块（GitHub Alerts 语法）：配色读主题变量，第二参数是浅色兜底 */
+.callout {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border-left: 4px solid transparent;
+  border-radius: 4px;
+}
+.callout-title {
+  margin: 0 0 0.4em;
+  font-weight: 600;
+}
+.callout > *:last-child {
+  margin-bottom: 0;
+}
+
+.callout-note {
+  background: var(--ms-callout-note-bg, #ddf4ff);
+  border-left-color: var(--ms-callout-note-border, #54aeff);
+}
+.callout-note .callout-title {
+  color: var(--ms-callout-note-title, #0969da);
+}
+
+.callout-tip {
+  background: var(--ms-callout-tip-bg, #dafbe1);
+  border-left-color: var(--ms-callout-tip-border, #4ac26b);
+}
+.callout-tip .callout-title {
+  color: var(--ms-callout-tip-title, #1a7f37);
+}
+
+.callout-important {
+  background: var(--ms-callout-important-bg, #fbefff);
+  border-left-color: var(--ms-callout-important-border, #c297ff);
+}
+.callout-important .callout-title {
+  color: var(--ms-callout-important-title, #8250df);
+}
+
+.callout-warning {
+  background: var(--ms-callout-warning-bg, #fff8c5);
+  border-left-color: var(--ms-callout-warning-border, #d4a72c);
+}
+.callout-warning .callout-title {
+  color: var(--ms-callout-warning-title, #9a6700);
+}
+
+.callout-caution {
+  background: var(--ms-callout-caution-bg, #ffebe9);
+  border-left-color: var(--ms-callout-caution-border, #ff8182);
+}
+.callout-caution .callout-title {
+  color: var(--ms-callout-caution-title, #cf222e);
+}

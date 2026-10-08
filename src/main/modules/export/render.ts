@@ -6,6 +6,7 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import rehypeStringify from 'rehype-stringify'
 import { addHljsClassToCodeBlocks, type HastNode } from './ensureCodeClass'
+import { transformCallouts } from './calloutBlocks'
 
 /**
  * 给所有代码块补上 hljs 类。
@@ -14,6 +15,14 @@ import { addHljsClassToCodeBlocks, type HastNode } from './ensureCodeClass'
  */
 function rehypeEnsureHljsClass() {
   return (tree: HastNode): void => addHljsClassToCodeBlocks(tree)
+}
+
+/**
+ * 把 `> [!TYPE]` 的引用块换成带样式的 div.callout。
+ * 放在 hljs 补类之后：块内的代码块先拿到 hljs 类，再整体被搬进 div，互不干扰。
+ */
+function rehypeCallouts() {
+  return (tree: HastNode): void => transformCallouts(tree)
 }
 
 /**
@@ -37,6 +46,7 @@ export async function renderMarkdownToHtml(markdown: string): Promise<string> {
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeHighlight)
     .use(rehypeEnsureHljsClass)
+    .use(rehypeCallouts)
     .use(rehypeKatex)
     .use(rehypeStringify, { allowDangerousHtml: true })
     .process(markdown)

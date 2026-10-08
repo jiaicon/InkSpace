@@ -8,6 +8,22 @@ function textOf(node: HastNode): string {
 }
 
 /**
+ * 第一个**元素**子节点。remark-rehype 会在块之间插入 `"\n"` 文本节点，
+ * 所以不能假设 children[0] 就是段落。
+ */
+function firstElement(children: readonly HastNode[]): { node: HastNode; index: number } | null {
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].type === 'element') return { node: children[i], index: i }
+  }
+  return null
+}
+
+/** 只有空白的文本节点（块之间的换行） */
+function isBlank(node: HastNode): boolean {
+  return node.type === 'text' && (node.value ?? '').trim() === ''
+}
+
+/**
  * 把 `> [!TYPE]` 的引用块换成 `<div class="callout callout-<slug>">`。
  *
  * 判定与编辑器侧共用 @shared/callout，两边规则不会漂移。
@@ -30,10 +46,10 @@ export function transformCallouts(node: HastNode | undefined): void {
 
 function asCallout(quote: HastNode): HastNode | null {
   const kids = quote.children ?? []
-  const first = kids[0]
-  if (!first || first.type !== 'element' || first.tagName !== 'p') return null
+  const found = firstElement(kids)
+  if (!found || found.node.tagName !== 'p') return null
 
-  const type = parseCalloutMarker(textOf(first))
+  const type = parseCalloutMarker(textOf(found.node))
   if (!type) return null
 
   const meta = calloutMeta(type)
@@ -43,10 +59,13 @@ function asCallout(quote: HastNode): HastNode | null {
     properties: { className: ['callout-title'] },
     children: [{ type: 'text', value: meta.title }]
   }
+  // 丢掉标记段本身；同时丢掉 div **直接子节点**里的空白（块之间的换行无意义）。
+  // 只过滤直接子节点，pre 内部的空白是内容，不能碰。
+  const body = kids.slice(found.index + 1).filter((kid) => !isBlank(kid))
   return {
     type: 'element',
     tagName: 'div',
     properties: { className: ['callout', `callout-${meta.slug}`] },
-    children: [title, ...kids.slice(1)]
+    children: [title, ...body]
   }
 }
