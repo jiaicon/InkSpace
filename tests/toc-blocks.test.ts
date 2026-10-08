@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { collectHastHeadings, replaceTocPlaceholder } from '../src/main/modules/export/tocBlocks'
 import { addHeadingIds } from '../src/main/modules/export/headingIds'
-import type { HastNode } from '../src/main/modules/export/ensureCodeClass'
+import { hastText, type HastNode } from '../src/main/modules/export/ensureCodeClass'
 
 const text = (value: string): HastNode => ({ type: 'text', value })
 const el = (tagName: string, ...children: HastNode[]): HastNode => ({
@@ -11,15 +11,12 @@ const el = (tagName: string, ...children: HastNode[]): HastNode => ({
 })
 const root = (...children: HastNode[]): HastNode => ({ type: 'root', children })
 
-const hastTextOf = (n: HastNode): string =>
-  n.type === 'text' ? (n.value ?? '') : (n.children ?? []).map(hastTextOf).join('')
-
 /** 收集出来的第一个 nav 里的链接文本 */
 function firstNavLinks(tree: HastNode): string[] {
   const nav = tree.children!.find((c) => c.tagName === 'nav')!
   const links: string[] = []
   const walk = (n: HastNode): void => {
-    if (n.tagName === 'a') links.push(hastTextOf(n))
+    if (n.tagName === 'a') links.push(hastText(n))
     for (const c of n.children ?? []) walk(c)
   }
   walk(nav)

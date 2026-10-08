@@ -1,6 +1,5 @@
 import { buildTocTree, isTocParagraph, type TocTreeNode } from '@shared/toc'
-import { hastText } from './headingIds'
-import type { HastNode } from './ensureCodeClass'
+import { hastText, type HastNode } from './ensureCodeClass'
 
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 

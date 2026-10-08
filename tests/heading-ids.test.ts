@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { addHeadingIds, hastText, slugifyHeading } from '../src/main/modules/export/headingIds'
-import type { HastNode } from '../src/main/modules/export/ensureCodeClass'
+import { addHeadingIds, slugifyHeading } from '../src/main/modules/export/headingIds'
+import { hastText, type HastNode } from '../src/main/modules/export/ensureCodeClass'
 
 const h = (tagName: string, ...children: HastNode[]): HastNode => ({
   type: 'element',

@@ -1,12 +1,6 @@
-import type { HastNode } from './ensureCodeClass'
+import { hastText, type HastNode } from './ensureCodeClass'
 
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-
-/** 元素的纯文本（递归拼接 h1–h6 里的行内标记，如 <code>） */
-export function hastText(node: HastNode): string {
-  if (node.type === 'text') return node.value ?? ''
-  return (node.children ?? []).map(hastText).join('')
-}
 
 /**
  * 标题文本 → 锚点 id：保留中文与字母数字，其余转 `-`，折叠连续 `-`，去首尾 `-`，

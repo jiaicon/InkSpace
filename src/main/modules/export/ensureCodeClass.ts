@@ -7,6 +7,17 @@ export interface HastNode {
   children?: HastNode[]
 }
 
+/**
+ * 元素的纯文本（递归拼接行内子节点，例如标题里的 `<code>`）。
+ *
+ * 与 `HastNode` 同放在这里：本目录的几个 hast 变换都从这一个模块取共用件，
+ * 免得各写一份实现之后行为悄悄分叉。
+ */
+export function hastText(node: HastNode): string {
+  if (node.type === 'text') return node.value ?? ''
+  return (node.children ?? []).map(hastText).join('')
+}
+
 function classNameOf(node: HastNode): string[] {
   const raw = node.properties?.className
   if (Array.isArray(raw)) return raw.filter((c): c is string => typeof c === 'string')

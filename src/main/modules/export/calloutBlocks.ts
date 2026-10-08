@@ -1,11 +1,5 @@
 import { calloutMeta, parseCalloutMarker } from '@shared/callout'
-import type { HastNode } from './ensureCodeClass'
-
-/** 元素节点的纯文本（递归拼接） */
-function textOf(node: HastNode): string {
-  if (node.type === 'text') return node.value ?? ''
-  return (node.children ?? []).map(textOf).join('')
-}
+import { hastText, type HastNode } from './ensureCodeClass'
 
 /**
  * 第一个**元素**子节点。remark-rehype 会在块之间插入 `"\n"` 文本节点，
@@ -49,7 +43,7 @@ function asCallout(quote: HastNode): HastNode | null {
   const found = firstElement(kids)
   if (!found || found.node.tagName !== 'p') return null
 
-  const type = parseCalloutMarker(textOf(found.node))
+  const type = parseCalloutMarker(hastText(found.node))
   if (!type) return null
 
   const meta = calloutMeta(type)
