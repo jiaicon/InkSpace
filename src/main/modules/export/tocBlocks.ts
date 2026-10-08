@@ -40,9 +40,13 @@ function listFrom(nodes: TocTreeNode<TocHtmlEntry>[]): HastNode {
   return {
     type: 'element',
     tagName: 'ul',
+    // properties 必须存在：rehype-katex 等插件会无保护地读 node.properties.className，
+    // 缺了会让整条导出管线抛错（纯函数单测看不出来，只有集成测试才会踩到）
+    properties: {},
     children: nodes.map((n) => ({
       type: 'element' as const,
       tagName: 'li',
+      properties: {},
       children: n.children.length > 0 ? [anchor(n), listFrom(n.children)] : [anchor(n)]
     }))
   }

@@ -358,3 +358,31 @@ body {
 .callout-caution .callout-title {
   color: var(--ms-callout-caution-title, #cf222e);
 }
+
+/* 文档内目录（[TOC]） */
+.toc {
+  margin: 1.25em 0;
+  padding: 0.75em 1em;
+  border: 1px solid var(--ms-border, #e4e7eb);
+  border-radius: 6px;
+  background: var(--ms-panel-bg, #f6f8fa);
+}
+.toc ul {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style: none;
+}
+.toc > ul {
+  padding-left: 0;
+}
+.toc li {
+  margin: 0.25em 0;
+}
+.toc a {
+  color: var(--ms-text, #24292f);
+  text-decoration: none;
+}
+.toc a:hover {
+  color: var(--ms-accent, #0969da);
+  text-decoration: underline;
+}

@@ -4,7 +4,8 @@ import { renderMarkdownToHtml } from '../src/main/modules/export/render'
 describe('renderMarkdownToHtml', () => {
   it('渲染基础 markdown 结构', async () => {
     const html = await renderMarkdownToHtml('# 标题\n\n正文 **加粗**')
-    expect(html).toContain('<h1>标题</h1>')
+    // 标题现在会带锚点 id（TOC 链接需要，见 spec §5.3），所以断言里带上 id
+    expect(html).toContain('<h1 id="标题">标题</h1>')
     expect(html).toContain('<strong>加粗</strong>')
   })
 

@@ -7,6 +7,8 @@ import rehypeKatex from 'rehype-katex'
 import rehypeStringify from 'rehype-stringify'
 import { addHljsClassToCodeBlocks, type HastNode } from './ensureCodeClass'
 import { transformCallouts } from './calloutBlocks'
+import { addHeadingIds } from './headingIds'
+import { collectHastHeadings, replaceTocPlaceholder } from './tocBlocks'
 
 /**
  * 给所有代码块补上 hljs 类。
@@ -23,6 +25,21 @@ function rehypeEnsureHljsClass() {
  */
 function rehypeCallouts() {
   return (tree: HastNode): void => transformCallouts(tree)
+}
+
+/**
+ * 给标题加锚点 id。必须在 TOC 替换之前跑 —— 目录链接要用到这些 id。
+ * 注意：这会让**所有**导出产物的标题带上 id（spec §5.3 已记录的唯一既有产物变化）。
+ */
+function rehypeHeadingIds() {
+  return (tree: HastNode): void => addHeadingIds(tree)
+}
+
+/** 把根层 `[TOC]` 段落换成 nav.toc 嵌套列表 */
+function rehypeToc() {
+  return (tree: HastNode): void => {
+    replaceTocPlaceholder(tree, collectHastHeadings(tree))
+  }
 }
 
 /**
@@ -47,6 +64,8 @@ export async function renderMarkdownToHtml(markdown: string): Promise<string> {
     .use(rehypeHighlight)
     .use(rehypeEnsureHljsClass)
     .use(rehypeCallouts)
+    .use(rehypeHeadingIds)
+    .use(rehypeToc)
     .use(rehypeKatex)
     .use(rehypeStringify, { allowDangerousHtml: true })
     .process(markdown)

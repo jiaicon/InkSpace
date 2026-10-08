@@ -32,7 +32,8 @@ describe('buildExportHtml', () => {
 
     expect(html).toMatch(/^<!DOCTYPE html>/)
     expect(html).toContain('<title>note</title>')
-    expect(html).toContain('<h1>标题</h1>')
+    // 标题现在会带锚点 id（TOC 链接需要，见 spec §5.3），所以断言里带上 id
+    expect(html).toContain('<h1 id="标题">标题</h1>')
     // 相对图片被内嵌，导出物不再依赖原始文件
     expect(html).toContain('data:image/png;base64,')
     expect(html).not.toContain('src="./assets/a.png"')
