@@ -15,7 +15,7 @@
 
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -46,8 +46,15 @@ function extractFromTar(tarBuf, name) {
   while (offset + 512 <= tarBuf.length) {
     const header = tarBuf.subarray(offset, offset + 512)
     if (header.every((b) => b === 0)) return null // 两个零块表示归档结束
-    const entryName = header.subarray(0, 100).toString('utf8').replace(/\0[\s\S]*$/, '')
-    const sizeStr = header.subarray(124, 136).toString('utf8').replace(/\0[\s\S]*$/, '').trim()
+    const entryName = header
+      .subarray(0, 100)
+      .toString('utf8')
+      .replace(/\0[\s\S]*$/, '')
+    const sizeStr = header
+      .subarray(124, 136)
+      .toString('utf8')
+      .replace(/\0[\s\S]*$/, '')
+      .trim()
     const size = parseInt(sizeStr || '0', 8) || 0
     const dataStart = offset + 512
     if (entryName.endsWith(name)) {
@@ -62,7 +69,11 @@ async function main() {
   for (const { runtime, abi } of targets) {
     const file = `better-sqlite3-v${version}-${runtime}-v${abi}-${platform}-${arch}.tar.gz`
     const url = `${MIRROR}/v${version}/${file}`
-    const destDir = join(ROOT, 'node_modules/better-sqlite3/lib/binding', `node-v${abi}-${platform}-${arch}`)
+    const destDir = join(
+      ROOT,
+      'node_modules/better-sqlite3/lib/binding',
+      `node-v${abi}-${platform}-${arch}`
+    )
     const dest = join(destDir, 'better_sqlite3.node')
 
     if (existsSync(dest)) {
@@ -73,20 +84,36 @@ async function main() {
     console.log(`[setup-better-sqlite3] downloading ${url}`)
     const res = await fetch(url)
     if (!res.ok) {
-      console.warn(`[setup-better-sqlite3] download failed (HTTP ${res.status}) for ${runtime} ABI ${abi}; skipping`)
+      console.warn(
+        `[setup-better-sqlite3] download failed (HTTP ${res.status}) for ${runtime} ABI ${abi}; skipping`
+      )
       continue
     }
 
     const tarBuf = gunzipSync(Buffer.from(await res.arrayBuffer()))
     const nodeBuf = extractFromTar(tarBuf, 'better_sqlite3.node')
     if (!nodeBuf) {
-      console.warn(`[setup-better-sqlite3] could not find better_sqlite3.node in archive for ${runtime}`)
+      console.warn(
+        `[setup-better-sqlite3] could not find better_sqlite3.node in archive for ${runtime}`
+      )
       continue
     }
 
     mkdirSync(destDir, { recursive: true })
     writeFileSync(dest, nodeBuf)
     console.log(`[setup-better-sqlite3] installed ${runtime} build -> ${dest}`)
+  }
+
+  // `bindings` 解析原生模块时，`build/Release` 排在 ABI 键控的 `lib/binding/node-v<abi>` **前面**；
+  // 而 ABI 不匹配抛的是 ERR_DLOPEN_FAILED，不会被它「换下一条路径再试」的逻辑吞掉。
+  // 于是 build/Release 里任何一份残留（例如某次 npm rebuild 拉下来的 Electron ABI 版）
+  // 都会把上面这套双 ABI 方案整个遮蔽掉，表现为 vitest 里一批测试报
+  // "compiled against a different Node.js version"——而错误信息完全不指向真正的原因。
+  // 两份正确的 ABI 构建已经在 lib/binding 下，这里直接清掉遮蔽物。
+  const shadow = join(ROOT, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node')
+  if (existsSync(shadow)) {
+    rmSync(shadow)
+    console.log(`[setup-better-sqlite3] removed shadowing build/Release build -> ${shadow}`)
   }
 }
 
