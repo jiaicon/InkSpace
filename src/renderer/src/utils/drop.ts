@@ -1,6 +1,11 @@
 const MARKDOWN_RE = /\.(?:md|markdown)$/i
 const IMAGE_RE = /\.(?:png|jpe?g|gif|webp|svg|bmp|ico|avif)$/i
 
+/** 是否是（按扩展名判定的）图片路径；拖拽、粘贴、剪贴板文本解析共用同一份判定 */
+export function isImagePath(path: string): boolean {
+  return IMAGE_RE.test(path)
+}
+
 export interface DroppedPaths {
   markdown: string[]
   images: string[]

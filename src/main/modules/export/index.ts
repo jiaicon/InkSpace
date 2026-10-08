@@ -4,6 +4,7 @@ import { resolveHighlightTheme } from '@shared/highlightThemes'
 import { handle } from '../../ipc/util'
 import { createExportService } from './service'
 import type { ExportThemeCss } from './compose'
+import { buildKatexCss } from './katexCss'
 import type { SettingsService } from '../settings/service'
 import type { ThemeStoreHandle } from '../themes'
 
@@ -19,6 +20,10 @@ export function registerExportIpc(settings: SettingsService, themes: ThemeStoreH
     return { markdown, code: resolveHighlightTheme(s.highlightTheme, s.theme).css }
   }
 
-  handle(IPC.exportHtml, async (req) => svc.exportHtml(req as ExportRequest, await resolveThemes()))
-  handle(IPC.exportPdf, async (req) => svc.exportPdf(req as ExportRequest, await resolveThemes()))
+  handle(IPC.exportHtml, async (req) =>
+    svc.exportHtml(req as ExportRequest, await resolveThemes(), buildKatexCss)
+  )
+  handle(IPC.exportPdf, async (req) =>
+    svc.exportPdf(req as ExportRequest, await resolveThemes(), buildKatexCss)
+  )
 }

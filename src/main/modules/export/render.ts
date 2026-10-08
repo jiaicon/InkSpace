@@ -1,7 +1,9 @@
 import { remark } from 'remark'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import remarkRehype from 'remark-rehype'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeKatex from 'rehype-katex'
 import rehypeStringify from 'rehype-stringify'
 import { addHljsClassToCodeBlocks, type HastNode } from './ensureCodeClass'
 
@@ -25,13 +27,17 @@ function rehypeEnsureHljsClass() {
  *
  * rehype-highlight 默认 `detect: false` + `common` 语言集，与编辑器同一套：
  * 只在代码块标注了语言时高亮，不猜语言。
+ * remark-math + rehype-katex 把 `$...$` / `$$...$$` 渲染成与编辑器一致的 KaTeX 公式；
+ * 其样式与字体由 compose 侧按「文档里是否有公式」决定是否内联。
  */
 export async function renderMarkdownToHtml(markdown: string): Promise<string> {
   const file = await remark()
     .use(remarkGfm)
+    .use(remarkMath)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeHighlight)
     .use(rehypeEnsureHljsClass)
+    .use(rehypeKatex)
     .use(rehypeStringify, { allowDangerousHtml: true })
     .process(markdown)
   return String(file).trim()

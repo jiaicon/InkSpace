@@ -9,6 +9,8 @@ export interface ExportDocumentOptions {
   markdownThemeCss: string
   /** 代码块主题 CSS */
   codeThemeCss: string
+  /** KaTeX 样式（含内联字体）；文档里没有公式时为空串 */
+  katexCss: string
 }
 
 /** 转义 HTML 元字符，避免标题里的 < > & " ' 破坏文档结构 */
@@ -32,7 +34,8 @@ export function buildExportDocument({
   title,
   body,
   markdownThemeCss,
-  codeThemeCss
+  codeThemeCss,
+  katexCss
 }: ExportDocumentOptions): string {
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -42,6 +45,7 @@ export function buildExportDocument({
 <title>${escapeHtml(title)}</title>
 <style>
 ${exportCss}
+${katexCss}
 ${markdownThemeCss}
 ${codeThemeCss}</style>
 </head>

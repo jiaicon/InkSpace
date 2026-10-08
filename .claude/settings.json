@@ -93,7 +93,15 @@
       "Bash(grep -viE \"^\\\\s*$|node_modules|deprecat\")",
       "Bash(wsl --status)",
       "Bash(wsl -l -v)",
-      "Bash(docker --version)"
+      "Bash(docker --version)",
+      "Bash(grep -rn 'export.*$remark' node_modules/@milkdown/utils/lib/composable/index.d.ts)",
+      "Bash(node -e 'console.log\\('\\\\''utils 导出中是否有 $remark:'\\\\'', require\\('\\\\''node:fs'\\\\''\\).readdirSync\\('\\\\''node_modules/@milkdown/utils/lib/composable'\\\\''\\).filter\\(f=>f.includes\\('\\\\''remark'\\\\''\\)\\).join\\('\\\\'','\\\\''\\) || '\\\\''无'\\\\''\\)')",
+      "Bash(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\")",
+      "Bash(cd \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref\")",
+      "Bash(grep -rln '$remark' node_modules/@milkdown/utils/lib/)",
+      "Bash(grep -rn 'export.*$remark\\\\|remark' node_modules/@milkdown/utils/lib/composable/index.d.ts node_modules/@milkdown/utils/lib/index.d.ts)",
+      "Bash(sed -n '1,80p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")",
+      "Bash(sed -n '80,153p' \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/ms-math-ref/package/lib/index.es.js\")"
     ],
     "additionalDirectories": ["d:\\mine\\electron-app"]
   }

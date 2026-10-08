@@ -71,17 +71,25 @@ async function renderPdf(html: string): Promise<Buffer> {
 /** 导出服务：先让用户确认保存位置，再渲染写盘，取消则不做无用功 */
 export function createExportService() {
   return {
-    async exportHtml(req: ExportRequest, themes: ExportThemeCss): Promise<string | null> {
+    async exportHtml(
+      req: ExportRequest,
+      themes: ExportThemeCss,
+      katexCss?: () => Promise<string>
+    ): Promise<string | null> {
       const target = await pickTarget(req, 'html')
       if (!target) return null
-      await writeFile(target, await buildExportHtml(req, themes), 'utf8')
+      await writeFile(target, await buildExportHtml(req, themes, katexCss), 'utf8')
       return target
     },
 
-    async exportPdf(req: ExportRequest, themes: ExportThemeCss): Promise<string | null> {
+    async exportPdf(
+      req: ExportRequest,
+      themes: ExportThemeCss,
+      katexCss?: () => Promise<string>
+    ): Promise<string | null> {
       const target = await pickTarget(req, 'pdf')
       if (!target) return null
-      await writeFile(target, await renderPdf(await buildExportHtml(req, themes)))
+      await writeFile(target, await renderPdf(await buildExportHtml(req, themes, katexCss)))
       return target
     }
   }

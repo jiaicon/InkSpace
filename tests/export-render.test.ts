@@ -66,4 +66,24 @@ describe('renderMarkdownToHtml', () => {
     // 代码里的 <div 必须是被转义后的文本，不能变成真正的标签
     expect(html).not.toContain('<div')
   })
+
+  it('行内公式渲染成 KaTeX 元素', async () => {
+    const html = await renderMarkdownToHtml('质能方程 $E = mc^2$ 很简洁')
+    expect(html).toContain('class="katex')
+  })
+
+  it('块级公式渲染成 display 模式', async () => {
+    const html = await renderMarkdownToHtml('$$\nE = mc^2\n$$')
+    expect(html).toContain('katex-display')
+  })
+
+  it('写错的公式不抛错（导出不能因公式写错而失败）', async () => {
+    const html = await renderMarkdownToHtml('$\\frac{1}{$')
+    expect(html).toContain('katex')
+  })
+
+  it('没有公式时不产生任何 KaTeX 元素', async () => {
+    const html = await renderMarkdownToHtml('# 标题\n\n普通文本与 `代码`')
+    expect(html).not.toContain('class="katex')
+  })
 })

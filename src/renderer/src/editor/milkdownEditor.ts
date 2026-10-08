@@ -15,6 +15,7 @@ import { wrapInTaskListCommand } from './taskList'
 import { taskListToggle } from './taskListToggle'
 import { imageView, setImageDocDir } from './imageView'
 import { codeHighlight } from './codeHighlight'
+import { mathPlugins } from './math'
 import {
   search as searchPlugin,
   SearchQuery,
@@ -184,6 +185,7 @@ export async function createMilkdownEditor(
     .use(taskListToggle)
     .use(imageView)
     .use(codeHighlight)
+    .use(mathPlugins)
     .use(searchExtension)
     .use(searchReporter)
     .create()

@@ -62,4 +62,33 @@ describe('buildExportHtml', () => {
     expect(html).toContain('<title>&lt;b&gt;&amp;&lt;/b&gt;</title>')
     expect(html).not.toContain('<title><b>')
   })
+
+  it('文档里没有公式时不去取 KaTeX 样式（避免白付几百 KB 字体）', async () => {
+    let asked = false
+    const html = await buildExportHtml(
+      { markdown: '# 标题\n\n普通文本', sourcePath: null, title: 't' },
+      themes,
+      async () => {
+        asked = true
+        return '/*KATEX*/'
+      }
+    )
+    expect(asked).toBe(false)
+    expect(html).not.toContain('/*KATEX*/')
+  })
+
+  it('文档里有公式时把 KaTeX 样式内联进导出物', async () => {
+    const html = await buildExportHtml(
+      { markdown: '质能方程 $E = mc^2$', sourcePath: null, title: 't' },
+      themes,
+      async () => '/*KATEX*/'
+    )
+    expect(html).toContain('class="katex')
+    expect(html).toContain('/*KATEX*/')
+  })
+
+  it('没提供 KaTeX 样式回调时也不报错（只是公式少样式）', async () => {
+    const html = await buildExportHtml({ markdown: '$x$', sourcePath: null, title: 't' }, themes)
+    expect(html).toContain('class="katex')
+  })
 })

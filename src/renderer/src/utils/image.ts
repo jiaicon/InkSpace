@@ -35,3 +35,24 @@ export function buildImageSrc(rawSrc: string, docDir: string | null): string {
   if (!docDir) return rawSrc
   return `ms-file://local/?dir=${encodeURIComponent(docDir)}&p=${encodeURIComponent(rawSrc)}`
 }
+
+/**
+ * 通过 ms-file 协议读取本地图片的字节。
+ *
+ * 用在「剪贴板里只有路径、没有 File 对象」的情形：从资源管理器复制文件再粘贴时，
+ * 剪贴板给的是路径文本，渲染进程自己读不了磁盘，借应用已有的协议把它取回来。
+ * 协议只放行图片扩展名，正好符合这里的用途。
+ */
+export async function fetchImageBytes(
+  absPath: string,
+  docDir: string | null
+): Promise<Uint8Array | null> {
+  const url = `ms-file://local/?dir=${encodeURIComponent(docDir ?? '')}&p=${encodeURIComponent(absPath)}`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return new Uint8Array(await res.arrayBuffer())
+  } catch {
+    return null
+  }
+}

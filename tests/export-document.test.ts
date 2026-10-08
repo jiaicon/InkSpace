@@ -14,11 +14,13 @@ describe('escapeHtml', () => {
 describe('buildExportDocument', () => {
   const themeCss = '.hljs{background:#272822;color:#ddd}'
   const markdownCss = '.milkdown{--ms-accent:#1e80ff}'
+  const katexCss = '.katex{font-size:1.2em}'
   const doc = buildExportDocument({
     title: '我的笔记',
     body: '<h1>Hi</h1>',
     markdownThemeCss: markdownCss,
-    codeThemeCss: themeCss
+    codeThemeCss: themeCss,
+    katexCss
   })
 
   it('产出完整的 HTML 文档骨架', () => {
@@ -31,7 +33,13 @@ describe('buildExportDocument', () => {
   it('标题写入 <title> 并转义', () => {
     expect(doc).toContain('<title>我的笔记</title>')
     expect(
-      buildExportDocument({ title: '<x>', body: '', markdownThemeCss: '', codeThemeCss: '' })
+      buildExportDocument({
+        title: '<x>',
+        body: '',
+        markdownThemeCss: '',
+        codeThemeCss: '',
+        katexCss: ''
+      })
     ).toContain('<title>&lt;x&gt;</title>')
   })
 
@@ -47,11 +55,13 @@ describe('buildExportDocument', () => {
     expect(doc).toContain('--ms-text, #24292f')
   })
 
-  it('两套主题 CSS 都内联，且都排在自带头样式之后（同权重时主题胜出）', () => {
+  it('两套主题 CSS 与 KaTeX 样式都内联，顺序为 基础 → KaTeX → 主题 → 代码主题', () => {
     expect(doc).toContain(markdownCss)
     expect(doc).toContain(themeCss)
+    expect(doc).toContain(katexCss)
     const base = doc.indexOf('--ms-text, #24292f')
-    expect(base).toBeLessThan(doc.indexOf(markdownCss))
+    expect(base).toBeLessThan(doc.indexOf(katexCss))
+    expect(doc.indexOf(katexCss)).toBeLessThan(doc.indexOf(markdownCss))
     // 代码主题排在 Markdown 主题之后，代码块观感以代码主题为准
     expect(doc.indexOf(markdownCss)).toBeLessThan(doc.indexOf(themeCss))
   })

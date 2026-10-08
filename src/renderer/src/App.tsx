@@ -32,7 +32,8 @@ import type { EditorHandle, EditorMode, SearchInfo } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
 import { titleFromPath, dirname } from './utils/path'
 import { classifyDroppedPaths } from './utils/drop'
-import { extFromImageFile } from './utils/image'
+import { extractImagePaths } from './utils/clipboard'
+import { extFromImageFile, fetchImageBytes } from './utils/image'
 import { workspaceApi } from './api/workspace'
 import { fileApi } from './api/file'
 import { exportApi } from './api/export'
@@ -391,27 +392,68 @@ export default function App() {
     })
   }, [openFile])
 
-  // —— 粘贴 / 拖入的图片：存到文档旁的 assets/，再在光标处插入相对路径 ——
-  const insertImages = useCallback(async (files: File[]) => {
-    const docPath = useWorkspaceStore.getState().activePath
-    if (!docPath) {
-      message.info('请先保存文档，再插入本地图片')
-      return
-    }
-    for (const file of files) {
-      const ext = extFromImageFile(file.name, file.type)
-      if (!ext) {
-        message.warning(`不支持的图片格式：${file.name || file.type || '未知'}`)
-        continue
+  // —— 粘贴 / 拖入的图片：存到文档旁的 assets/（或统一目录），再在光标处插入引用 ——
+  /** 字节已拿到的图片统一走这里：落盘 + 插入 */
+  const saveAndInsertImages = useCallback(
+    async (items: { data: Uint8Array; ext: string; label: string }[]) => {
+      const docPath = useWorkspaceStore.getState().activePath
+      if (!docPath) {
+        message.info('请先保存文档，再插入本地图片')
+        return
       }
-      try {
-        const data = new Uint8Array(await file.arrayBuffer())
-        editorRef.current?.insertImage(await fileApi.saveImage(docPath, data, ext))
-      } catch (e) {
-        message.error(`图片保存失败：${e instanceof Error ? e.message : String(e)}`)
+      for (const item of items) {
+        try {
+          editorRef.current?.insertImage(await fileApi.saveImage(docPath, item.data, item.ext))
+        } catch (e) {
+          message.error(
+            `图片保存失败（${item.label}）：${e instanceof Error ? e.message : String(e)}`
+          )
+        }
       }
-    }
-  }, [])
+    },
+    []
+  )
+
+  /** 剪贴板/拖拽给的是 File 对象（截图、拖入的文件） */
+  const insertImages = useCallback(
+    async (files: File[]) => {
+      const items: { data: Uint8Array; ext: string; label: string }[] = []
+      for (const file of files) {
+        const ext = extFromImageFile(file.name, file.type)
+        if (!ext) {
+          message.warning(`不支持的图片格式：${file.name || file.type || '未知'}`)
+          continue
+        }
+        items.push({ data: new Uint8Array(await file.arrayBuffer()), ext, label: file.name })
+      }
+      await saveAndInsertImages(items)
+    },
+    [saveAndInsertImages]
+  )
+
+  /** 只有路径、没有 File 对象时（从资源管理器复制文件再粘贴）：借 ms-file 协议取回字节 */
+  const insertImagesByPath = useCallback(
+    async (paths: string[]) => {
+      const docPath = useWorkspaceStore.getState().activePath
+      const docDir = docPath ? dirname(docPath) : null
+      const items: { data: Uint8Array; ext: string; label: string }[] = []
+      for (const path of paths) {
+        const ext = extFromImageFile(path, '')
+        if (!ext) {
+          message.warning(`不支持的图片格式：${path}`)
+          continue
+        }
+        const data = await fetchImageBytes(path, docDir)
+        if (!data) {
+          message.error(`读取图片失败：${path}`)
+          continue
+        }
+        items.push({ data, ext, label: path })
+      }
+      await saveAndInsertImages(items)
+    },
+    [saveAndInsertImages]
+  )
 
   // 拖拽：Markdown 走「打开文件」，图片走「插入」，两者互斥，避免抢同一个落点
   useEffect(() => {
@@ -426,8 +468,9 @@ export default function App() {
       if (files.length === 0) return
       e.preventDefault()
       e.stopPropagation()
-      // 分类用真实路径；插入图片需要 File 本身取字节，故按键建立映射
-      const paths = files.map((f) => fileApi.getPathForFile(f))
+      // 分类用真实路径；拿不到路径时回落到文件名（同样带扩展名，足够分类），
+      // 插入用的仍是 File 本身的字节，不依赖路径
+      const paths = files.map((f) => fileApi.getPathForFile(f) || f.name)
       const { markdown, images } = classifyDroppedPaths(paths)
       if (markdown.length > 0) {
         for (const p of markdown) void openFile(p)
@@ -449,19 +492,33 @@ export default function App() {
     }
   }, [openFile, insertImages])
 
-  // 粘贴：剪贴板里有图片（截图等）时插入图片，其余情况交给编辑器处理文本
+  // 粘贴：剪贴板里是图片文件（截图）或图片路径（资源管理器里复制的文件）时插入图片，
+  // 其余情况一律交给编辑器处理文本
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      const files = e.clipboardData ? Array.from(e.clipboardData.files) : []
-      const images = files.filter((f) => extFromImageFile(f.name, f.type) !== null)
-      if (images.length === 0) return
+      const dt = e.clipboardData
+      if (!dt) return
+
+      // 1) 截图等：剪贴板里直接是图片文件
+      const images = Array.from(dt.files).filter((f) => extFromImageFile(f.name, f.type) !== null)
+      if (images.length > 0) {
+        e.preventDefault()
+        e.stopPropagation()
+        void insertImages(images)
+        return
+      }
+
+      // 2) 资源管理器里复制的文件：剪贴板给的是路径文本（uri-list 或纯文本），
+      //    不处理的话会被当普通文字粘进正文
+      const paths = extractImagePaths(`${dt.getData('text/uri-list')}\n${dt.getData('text/plain')}`)
+      if (paths.length === 0) return
       e.preventDefault()
       e.stopPropagation()
-      void insertImages(images)
+      void insertImagesByPath(paths)
     }
     window.addEventListener('paste', onPaste, true)
     return () => window.removeEventListener('paste', onPaste, true)
-  }, [insertImages])
+  }, [insertImages, insertImagesByPath])
 
   const openWorkspace = useCallback(async () => {
     try {

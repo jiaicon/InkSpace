@@ -757,3 +757,53 @@ html[data-theme='dark'] .ms-sider .ant-tree .ant-tree-treenode:hover {
   color: var(--ms-text-secondary);
   text-align: right;
 }
+
+/* ==========================================================================
+   数学公式（KaTeX）
+   节点内同时有「渲染层」与「源码层」，由 .is-editing（光标进入公式）决定显示哪一个
+   ========================================================================== */
+
+/* 行内公式 */
+.ms-math-inline .ms-math-render {
+  display: inline;
+}
+.ms-math-inline .ms-math-src {
+  display: none;
+  font-family: var(--ms-font-mono);
+  font-size: 0.9em;
+  color: var(--ms-accent);
+}
+.ms-math-inline.is-editing .ms-math-render {
+  display: none;
+}
+.ms-math-inline.is-editing .ms-math-src {
+  display: inline;
+}
+
+/* 块级公式 */
+.ms-math-block {
+  margin: 0 0 1em;
+}
+.ms-math-block .ms-math-render {
+  display: block;
+  text-align: center;
+  overflow-x: auto;
+}
+.ms-math-block .ms-math-src {
+  display: none;
+  margin: 0;
+  padding: 12px;
+  font-family: var(--ms-font-mono);
+  font-size: 0.85em;
+  line-height: 1.5;
+  text-align: left;
+  background: var(--ms-code-bg);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.ms-math-block.is-editing .ms-math-render {
+  display: none;
+}
+.ms-math-block.is-editing .ms-math-src {
+  display: block;
+}
