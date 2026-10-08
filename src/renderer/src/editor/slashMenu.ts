@@ -5,13 +5,12 @@ import {
   wrapInOrderedListCommand,
   wrapInBlockquoteCommand,
   createCodeBlockCommand,
-  insertHrCommand,
   turnIntoTextCommand,
   liftListItemCommand
 } from '@milkdown/kit/preset/commonmark'
 import { insertTableCommand } from '@milkdown/kit/preset/gfm'
 import { $prose } from '@milkdown/kit/utils'
-import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
+import { Plugin, PluginKey, Selection, TextSelection } from '@milkdown/kit/prose/state'
 import type { Node as ProseMirrorNode } from '@milkdown/kit/prose/model'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import { CALLOUTS, calloutMarkerText, type CalloutType } from '@shared/callout'
@@ -148,7 +147,20 @@ export const slashMenu = (options: SlashMenuOptions = {}) =>
       quote: () => manager().call(wrapInBlockquoteCommand.key),
       code: () => manager().call(createCodeBlockCommand.key),
       table: () => manager().call(insertTableCommand.key, { row: 3, col: 3 }),
-      hr: () => manager().call(insertHrCommand.key),
+      // 分割线：只插 hr，把光标交给切分后仍在的后续块。
+      // 不用 Milkdown 的 insertHrCommand —— 它会额外插一个**空段落**，
+      // 而空段落夹在中间时 markdown 表示不了，存盘会变成一行 <br />，
+      // 等于往用户文档里塞了他没写过的东西。（实测：光标在第一段开头插分割线，
+      // 写盘为 "***\n\n<br />\n\n段落A…"；文末的空段落则不会。）
+      hr: () => {
+        if (!view) return
+        const { state } = view
+        const tr = state.tr.replaceSelectionWith(state.schema.nodes.hr.create())
+        // 切分保留了原文，所以 hr 后面一定有块；不额外造段落
+        const sel = Selection.findFrom(tr.doc.resolve(tr.selection.from), 1, true)
+        if (sel) tr.setSelection(sel)
+        view.dispatch(tr)
+      },
       math: () => {
         if (!view) return
         const { schema } = view.state
