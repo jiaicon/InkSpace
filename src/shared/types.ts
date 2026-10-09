@@ -63,6 +63,8 @@ export interface AppSettings {
   imageSubdir: string
   /** 代码块主题 id；'auto' 表示跟随明暗自动挑选 */
   highlightTheme: string
+  /** mermaid 图表主题 id；'auto' 表示跟随明暗自动挑选 */
+  mermaidTheme: string
   /** Markdown 主题 id；'auto' 表示不套主题、跟随基础亮暗 */
   markdownTheme: string
 }

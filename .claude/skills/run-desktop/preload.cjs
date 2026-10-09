@@ -45,6 +45,10 @@ function readSettings() {
   }
 }
 
+// 设置：可被驱动脚本改写，并能手动触发「别的窗口改了设置」的推送，用来验跨窗口联动
+let settingsState = readSettings()
+let settingsChangedCb = null
+
 contextBridge.exposeInMainWorld('api', {
   system: {
     getInfo: () =>
@@ -84,9 +88,16 @@ contextBridge.exposeInMainWorld('api', {
   },
   export: { html: () => ok(null), pdf: () => ok(null) },
   settings: {
-    get: () => ok(readSettings()),
-    set: () => ok(readSettings()),
-    chooseImageDir: () => ok(null)
+    get: () => ok(settingsState),
+    set: (key, value) => {
+      settingsState = { ...settingsState, [key]: value }
+      return ok(settingsState)
+    },
+    chooseImageDir: () => ok(null),
+    // 应用挂载时会订阅「设置变更广播」；桩要提供它，否则 App 一启动就炸
+    onChanged: (cb) => {
+      settingsChangedCb = cb
+    }
   },
   themes: {
     list: () => ok([]),
@@ -126,5 +137,10 @@ contextBridge.exposeInMainWorld('__verify', {
   windowCalls: () => windowCalls,
   claimCalls: () => claimCalls,
   reportedFiles: () => reportedFiles,
-  bootstrapCalls: () => bootstrapCalls
+  bootstrapCalls: () => bootstrapCalls,
+  // 跨窗口设置联动：先改桩里的设置，再模拟「主进程广播」触发订阅回调
+  setSettings: (patch) => {
+    settingsState = { ...settingsState, ...patch }
+  },
+  fireSettingsChanged: () => settingsChangedCb?.()
 })

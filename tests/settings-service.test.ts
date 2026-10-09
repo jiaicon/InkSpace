@@ -26,6 +26,7 @@ describe('settings service', () => {
       imageDir: DEFAULT_DIR,
       imageSubdir: 'assets',
       highlightTheme: 'auto',
+      mermaidTheme: 'auto',
       markdownTheme: 'auto'
     })
   })
@@ -43,6 +44,7 @@ describe('settings service', () => {
       imageDir: 'D:/图库',
       imageSubdir: 'img',
       highlightTheme: 'auto',
+      mermaidTheme: 'auto',
       markdownTheme: 'auto'
     })
   })
@@ -75,6 +77,7 @@ describe('settings service', () => {
       imageDir: 'E:/pics',
       imageSubdir: 'img',
       highlightTheme: 'auto',
+      mermaidTheme: 'auto',
       markdownTheme: 'auto'
     })
   })
@@ -103,6 +106,17 @@ describe('settings service', () => {
     expect(s.highlightTheme).toBe('auto')
   })
 
+  it('mermaid 主题可写入并在读回时保留', () => {
+    const svc = createSettingsService(fakeRepo(), DEFAULT_DIR)
+    svc.set('mermaidTheme', 'forest')
+    expect(svc.getAll().mermaidTheme).toBe('forest')
+  })
+
+  it('库里存了未知 mermaid 主题时回落到默认', () => {
+    const s = createSettingsService(fakeRepo({ mermaidTheme: 'no-such' }), DEFAULT_DIR).getAll()
+    expect(s.mermaidTheme).toBe('auto')
+  })
+
   describe('校验（IPC 边界，非法值必须挡下）', () => {
     const svc = () => createSettingsService(fakeRepo(), DEFAULT_DIR)
 
@@ -129,6 +143,12 @@ describe('settings service', () => {
       expect(() => svc().set('highlightTheme', 'no-such-theme')).toThrow(/未知的代码块主题/)
       expect(() => svc().set('highlightTheme', 'auto')).not.toThrow()
       expect(() => svc().set('highlightTheme', 'github-dark')).not.toThrow()
+    })
+
+    it('拒绝未知 mermaid 主题，但接受 auto 与内置 id', () => {
+      expect(() => svc().set('mermaidTheme', 'no-such-theme')).toThrow(/未知的图表主题/)
+      expect(() => svc().set('mermaidTheme', 'auto')).not.toThrow()
+      expect(() => svc().set('mermaidTheme', 'forest')).not.toThrow()
     })
 
     it('拒绝不安全的 Markdown 主题 id（会拼进路径）', () => {

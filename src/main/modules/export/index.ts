@@ -1,6 +1,7 @@
 import { IPC } from '@shared/ipc'
 import type { ExportRequest } from '@shared/types'
 import { resolveHighlightTheme } from '@shared/highlightThemes'
+import { resolveMermaidTheme } from '@shared/mermaidThemes'
 import { handle } from '../../ipc/util'
 import { createExportService } from './service'
 import type { ExportThemeCss } from './compose'
@@ -11,7 +12,15 @@ import type { ThemeStoreHandle } from '../themes'
 
 /** 注册 export 模块的 IPC handler（导出为 HTML / PDF）；两套主题都跟随当前设置 */
 export function registerExportIpc(settings: SettingsService, themes: ThemeStoreHandle): void {
-  const svc = createExportService({ katexCss: buildKatexCss, mermaid: renderMermaidSvg })
+  const svc = createExportService({
+    katexCss: buildKatexCss,
+    // mermaid 的主题是渲染时烧进 SVG 的，所以这里按**当前设置**解析后再传进去
+    //（'auto' 跟随明暗；不解析的话暗色导出里会出现浅色图表）
+    mermaid: (code) => {
+      const s = settings.getAll()
+      return renderMermaidSvg(code, resolveMermaidTheme(s.mermaidTheme, s.theme))
+    }
+  })
 
   // 代码主题 'auto' 跟随应用明暗；Markdown 主题 'auto' 表示不套主题（导出用浅色默认值）
   const resolveThemes = async (): Promise<ExportThemeCss> => {

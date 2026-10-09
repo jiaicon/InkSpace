@@ -52,6 +52,8 @@ declare global {
         get: () => Promise<IpcResult<AppSettings>>
         set: (key: string, value: string) => Promise<IpcResult<AppSettings>>
         chooseImageDir: (current: string) => Promise<IpcResult<string | null>>
+        /** 别的窗口改了设置时回调（主进程推送）；本窗口据此重读设置 */
+        onChanged: (cb: () => void) => void
       }
       themes: {
         list: () => Promise<IpcResult<MarkdownThemeInfo[]>>

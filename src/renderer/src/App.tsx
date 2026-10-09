@@ -15,8 +15,6 @@ import {
   CodeOutlined,
   EditOutlined,
   BulbOutlined,
-  PictureOutlined,
-  LinkOutlined,
   FileAddOutlined,
   SaveOutlined,
   ExportOutlined,
@@ -27,6 +25,7 @@ import {
 } from '@ant-design/icons'
 import type { AppSettings, MarkdownThemeInfo, ThemeMode } from '@shared/types'
 import { resolveHighlightTheme } from '@shared/highlightThemes'
+import { resolveMermaidTheme } from '@shared/mermaidThemes'
 import { Editor, parseOutline } from './editor'
 import type { EditorHandle, EditorMode, SearchInfo, SearchRequest } from './editor'
 import { useWorkspaceStore } from './stores/workspace'
@@ -199,6 +198,22 @@ export default function App() {
       })
   }, [])
 
+  // —— 设置变更广播：别的窗口改了设置（主题、代码块主题、mermaid 主题…）时本窗口跟着更新 ——
+  // 主进程是权威来源，所以这里重读一遍，而不是解析推送内容
+  useEffect(() => {
+    settingsApi.onChanged(() => {
+      settingsApi
+        .get()
+        .then((s) => {
+          setAppSettings(s)
+          setTheme(s.theme)
+        })
+        .catch(() => {
+          // 读设置失败不打断使用
+        })
+    })
+  }, [])
+
   // —— 主题应用到 <html data-theme> 并写入首帧缓存 ——
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -218,6 +233,18 @@ export default function App() {
     prevThemeRef.current = theme
     editorRef.current?.refreshDiagrams()
   }, [theme])
+
+  // —— mermaid 主题：写进 <html data-mermaid-theme>，编辑器渲染时自取（与 data-theme 同一套机制） ——
+  // 主题同样是烧进 SVG 的，所以解析结果变了也必须重画图表
+  const prevMermaidThemeRef = useRef<string | null>(null)
+  useEffect(() => {
+    const resolved = resolveMermaidTheme(appSettings?.mermaidTheme, theme)
+    document.documentElement.dataset.mermaidTheme = resolved
+    if (prevMermaidThemeRef.current !== null && prevMermaidThemeRef.current !== resolved) {
+      editorRef.current?.refreshDiagrams()
+    }
+    prevMermaidThemeRef.current = resolved
+  }, [appSettings?.mermaidTheme, theme])
 
   // —— Markdown 主题列表：内置 + 自定义（磁盘上的） ——
   const reloadThemes = useCallback(async () => {
@@ -1029,20 +1056,6 @@ export default function App() {
                 title="导出为 HTML / PDF"
               />
             </Dropdown>
-            <Button
-              type="text"
-              size="small"
-              icon={<PictureOutlined />}
-              title="插入图片"
-              onClick={requestImage}
-            />
-            <Button
-              type="text"
-              size="small"
-              icon={<LinkOutlined />}
-              title="插入链接 (Ctrl+K)"
-              onClick={requestLink}
-            />
             <Button
               type="text"
               size="small"

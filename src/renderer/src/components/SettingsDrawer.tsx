@@ -3,6 +3,7 @@ import { FolderOpenOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import type { AppSettings, MarkdownThemeInfo } from '@shared/types'
 import { AUTO_THEME_ID, HIGHLIGHT_THEMES } from '@shared/highlightThemes'
+import { AUTO_MERMAID_THEME, MERMAID_THEMES } from '@shared/mermaidThemes'
 
 // 下拉分组：auto 单独一组，其余按明暗分组，便于按当前界面色调挑
 const THEME_OPTIONS = [
@@ -17,6 +18,25 @@ const THEME_OPTIONS = [
   {
     label: '深色',
     options: HIGHLIGHT_THEMES.filter((t) => t.kind === 'dark').map((t) => ({
+      label: t.label,
+      value: t.id
+    }))
+  }
+]
+
+// mermaid 主题下拉：形态与上面的代码块主题刻意保持一致
+const MERMAID_THEME_OPTIONS = [
+  { label: '跟随明暗', value: AUTO_MERMAID_THEME },
+  {
+    label: '浅色',
+    options: MERMAID_THEMES.filter((t) => t.kind === 'light').map((t) => ({
+      label: t.label,
+      value: t.id
+    }))
+  },
+  {
+    label: '深色',
+    options: MERMAID_THEMES.filter((t) => t.kind === 'dark').map((t) => ({
       label: t.label,
       value: t.id
     }))
@@ -167,6 +187,19 @@ export function SettingsDrawer({
         options={THEME_OPTIONS}
       />
       <CodeThemePreview />
+
+      <Typography.Title level={5} style={{ marginTop: 28 }}>
+        图表主题
+      </Typography.Title>
+      <Select
+        style={{ width: '100%' }}
+        value={settings.mermaidTheme}
+        onChange={(value) => onChange('mermaidTheme', value)}
+        options={MERMAID_THEME_OPTIONS}
+      />
+      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
+        Mermaid 图表的配色。改完当前文档里的图表会立即重画。
+      </Typography.Paragraph>
 
       <Typography.Title level={5} style={{ marginTop: 28 }}>
         图片存放位置

@@ -4,6 +4,7 @@ import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import type { NodeView, ViewMutationRecord } from '@milkdown/kit/prose/view'
 import mermaidUrl from 'mermaid/dist/mermaid.min.js?url'
 import { hasMermaidContent, mermaidErrorMessage } from '@shared/mermaid'
+import { resolveMermaidTheme } from '@shared/mermaidThemes'
 import { editingDecoration } from './editingDecoration'
 
 /**
@@ -52,13 +53,19 @@ let renderSeq = 0
 
 /**
  * 渲染一段 mermaid 源码为 SVG。
- * 每次渲染前按当前主题 initialize：暗色界面下必须用 dark 主题，否则线条文字看不见。
+ * 每次渲染前按当前主题 initialize：mermaid 的主题是烧进 SVG 的，不重新 initialize 就换不了色。
+ * 主题从 <html> 的两个 data 属性读（与 data-theme 同一套机制）：mermaidTheme 是用户在设置里选的，
+ * 缺省/auto 时回落到明暗对应的主题。
  */
 async function renderDiagram(code: string): Promise<string> {
   const api = await loadMermaid()
+  const root = document.documentElement
   api.initialize({
     startOnLoad: false,
-    theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',
+    theme: resolveMermaidTheme(
+      root.dataset.mermaidTheme,
+      root.dataset.theme === 'dark' ? 'dark' : 'light'
+    ),
     // strict 会对标签里的 HTML 做净化——图表内容来自用户文档，不能直接信任
     securityLevel: 'strict'
   })

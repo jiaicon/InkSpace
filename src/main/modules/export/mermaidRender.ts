@@ -57,9 +57,21 @@ async function ensureRenderer(): Promise<BrowserWindow> {
   return ready
 }
 
-/** 渲染一段 mermaid 源码；失败时抛出（由调用方降级处理） */
-export async function renderMermaidSvg(code: string): Promise<string> {
+/**
+ * 渲染一段 mermaid 源码；`theme` 决定配色 —— mermaid 的主题是**渲染时烧进 SVG** 的，
+ * 所以每次渲染前都要 initialize 一次（不 initialize 就会一直用 mermaid 默认的浅色主题，
+ * 暗色导出里会出现浅色图表）。
+ */
+export async function renderMermaidSvg(code: string, theme = 'default'): Promise<string> {
   const target = await ensureRenderer()
+  // 先 initialize，再渲染。strict 会对标签里的 HTML 做净化 —— 图表内容来自用户文档，不能直接信任
+  await target.webContents.executeJavaScript(
+    `(window.mermaid.initialize(${JSON.stringify({
+      startOnLoad: false,
+      theme,
+      securityLevel: 'strict'
+    })}), true)`
+  )
   const id = `ms-export-mermaid-${++seq}`
   // 代码来自用户文档：用 JSON.stringify 安全地嵌进表达式，避免注入
   const svg = await target.webContents.executeJavaScript(

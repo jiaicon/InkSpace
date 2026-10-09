@@ -29,6 +29,8 @@ export const IPC = {
   settingsGet: 'settings:get',
   settingsSet: 'settings:set',
   settingsChooseImageDir: 'settings:choose-image-dir',
+  /** 主进程 → 渲染进程：别的窗口改了设置，收到就重读一遍（主题等要跨窗口一致） */
+  settingsChanged: 'settings:changed',
   // themes 模块（Markdown 主题）
   themesList: 'themes:list',
   themesGetCss: 'themes:get-css',

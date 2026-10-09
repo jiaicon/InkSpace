@@ -5,6 +5,7 @@ import { IPC } from '@shared/ipc'
 import { handle } from '../../ipc/util'
 import { createSettingsRepository } from './repository'
 import { createSettingsService, type SettingsService } from './service'
+import { documentWindows } from '../window/service'
 
 /** 统一图片目录的默认值：系统图片目录下的 InkSpace，首次插入时自动创建 */
 export function defaultImageDir(): string {
@@ -26,7 +27,11 @@ export function registerSettingsIpc(db: Database.Database): SettingsService {
   handle(IPC.settingsGet, () => svc.getAll())
   handle(IPC.settingsSet, (key, value) => {
     svc.set(key as string, value as string)
-    return svc.getAll()
+    const next = svc.getAll()
+    // 通知**所有**文档窗口重读设置 —— 主题、代码块主题、mermaid 主题这些必须跨窗口一致。
+    // 改动方自己也收得到：主进程是权威来源，多发一次比自己解析推送内容更简单可靠。
+    for (const win of documentWindows()) win.webContents.send(IPC.settingsChanged)
+    return next
   })
 
   handle(IPC.settingsChooseImageDir, async (current) => {

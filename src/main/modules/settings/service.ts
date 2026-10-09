@@ -1,6 +1,7 @@
 import { isAbsolute } from 'node:path'
 import type { AppSettings, ImageStorageMode, ThemeMode } from '@shared/types'
 import { DEFAULT_HIGHLIGHT_THEME, isKnownHighlightTheme } from '@shared/highlightThemes'
+import { DEFAULT_MERMAID_THEME, isKnownMermaidTheme } from '@shared/mermaidThemes'
 import { isSafeThemeId } from '../themes/store'
 import type { SettingsRepository } from './repository'
 
@@ -21,6 +22,7 @@ export function defaultSettings(defaultImageDir: string): AppSettings {
     imageDir: defaultImageDir,
     imageSubdir: 'assets',
     highlightTheme: DEFAULT_HIGHLIGHT_THEME,
+    mermaidTheme: DEFAULT_MERMAID_THEME,
     markdownTheme: DEFAULT_MARKDOWN_THEME
   }
 }
@@ -56,6 +58,9 @@ export function createSettingsService(
         highlightTheme: isKnownHighlightTheme(stored.highlightTheme ?? '')
           ? stored.highlightTheme
           : defaults.highlightTheme,
+        mermaidTheme: isKnownMermaidTheme(stored.mermaidTheme ?? '')
+          ? (stored.mermaidTheme as string)
+          : defaults.mermaidTheme,
         markdownTheme: isMarkdownThemeValue(stored.markdownTheme ?? '')
           ? (stored.markdownTheme as string)
           : defaults.markdownTheme
@@ -75,6 +80,9 @@ export function createSettingsService(
       }
       if (key === 'highlightTheme' && !isKnownHighlightTheme(value)) {
         throw new Error(`未知的代码块主题：${value}`)
+      }
+      if (key === 'mermaidTheme' && !isKnownMermaidTheme(value)) {
+        throw new Error(`未知的图表主题：${value}`)
       }
       if (key === 'markdownTheme' && !isMarkdownThemeValue(value)) {
         throw new Error(`未知的 Markdown 主题：${value}`)

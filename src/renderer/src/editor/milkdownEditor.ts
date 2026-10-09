@@ -4,7 +4,9 @@ import { gfm, columnResizingPlugin } from '@milkdown/kit/preset/gfm'
 import { history } from '@milkdown/kit/plugin/history'
 import { listener, listenerCtx } from '@milkdown/kit/plugin/listener'
 import { clipboard } from '@milkdown/kit/plugin/clipboard'
-import { trailing } from '@milkdown/kit/plugin/trailing'
+import { trailing, trailingConfig } from '@milkdown/kit/plugin/trailing'
+import type { Node as PMNode } from '@milkdown/kit/prose/model'
+import { isTocParagraph } from '@shared/toc'
 import { $prose, replaceAll } from '@milkdown/kit/utils'
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
@@ -133,6 +135,14 @@ const searchReporter = $prose(
     })
 )
 
+/** 末尾是这些块时，Milkdown 默认就不补尾段（它们本身能放光标） */
+const TRAILING_AS_IS = new Set(['heading', 'paragraph'])
+
+/** 段落里只有一张图片 —— 末尾是它时要补尾段，否则用户只能在图片正后面精确落点 */
+function isImageOnlyParagraph(node: PMNode): boolean {
+  return node.childCount === 1 && node.firstChild?.type.name === 'image'
+}
+
 // 空文档占位提示
 const placeholder = $prose(() => {
   const key = new PluginKey('MILKDOWN_PLACEHOLDER')
@@ -145,7 +155,8 @@ const placeholder = $prose(() => {
           doc.childCount === 1 && doc.firstChild?.isTextblock && doc.firstChild.content.size === 0
         if (!empty) return null
         return DecorationSet.create(doc, [
-          Decoration.widget(0, () => {
+          // 位置 1 = 空段落**内部**：放 0（段落之前）会让提示单独占一行、光标被挤到下一行
+          Decoration.widget(1, () => {
             const span = document.createElement('span')
             span.className = 'ms-placeholder'
             span.textContent = '开始写作… 支持 # 标题、- 列表、> 引用、``` 代码块'
@@ -174,6 +185,23 @@ export async function createMilkdownEditor(
     .config((ctx) => {
       ctx.set(rootCtx, root)
       ctx.set(defaultValueCtx, initialMarkdown)
+      ctx.set(trailingConfig.key, {
+        /**
+         * 末尾必须留一个**点得到的空段落**，否则用户没法换行。
+         * Milkdown 默认规则是「末尾不是 heading/paragraph 就补」，它漏了两种：
+         *  - 末尾是 `[TOC]` 占位段：它本身是 paragraph，但渲染时 `display:none`，点不到
+         *  - 末尾是只含一张图片的段落：只能在图片正后面精确落点
+         * 补出来的是尾段，存盘不留痕迹（实测序列化成空行，不会变成 `<br />`）。
+         */
+        shouldAppend: (lastNode) => {
+          if (!lastNode) return false
+          if (lastNode.type.name !== 'paragraph') {
+            return !TRAILING_AS_IS.has(lastNode.type.name)
+          }
+          return isTocParagraph(lastNode.textContent) || isImageOnlyParagraph(lastNode)
+        },
+        getNode: (state) => state.schema.nodes.paragraph.create()
+      })
     })
     .use(commonmark)
     .use(gfm)
