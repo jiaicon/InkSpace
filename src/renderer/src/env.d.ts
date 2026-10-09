@@ -61,6 +61,12 @@ declare global {
         export: (id: string) => Promise<IpcResult<string | null>>
         reveal: () => Promise<IpcResult<void>>
       }
+      window: {
+        /** 把该文件单独开到一个新窗口；已在别的窗口打开时主进程会聚焦那个窗口 */
+        openWithPath: (path: string) => Promise<IpcResult<{ focusedExisting: boolean }>>
+        /** 上报本窗口当前打开的文件，供主进程做「同一文件不开两个窗口」的守卫 */
+        reportOpenFiles: (paths: string[]) => Promise<IpcResult<void>>
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import { fileApi } from './apis/file'
 import { exportApi } from './apis/export'
 import { settingsApi } from './apis/settings'
 import { themesApi } from './apis/themes'
+import { windowApi } from './apis/window'
 
 // 聚合所有模块的 api，一次性通过 contextBridge 暴露为 window.api。
 const api = {
@@ -13,7 +14,8 @@ const api = {
   file: fileApi,
   export: exportApi,
   settings: settingsApi,
-  themes: themesApi
+  themes: themesApi,
+  window: windowApi
 }
 
 contextBridge.exposeInMainWorld('api', api)

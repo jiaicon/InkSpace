@@ -39,6 +39,7 @@ import { fileApi } from './api/file'
 import { exportApi } from './api/export'
 import { settingsApi } from './api/settings'
 import { themesApi } from './api/themes'
+import { windowApi } from './api/window'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { Welcome } from './components/Welcome'
@@ -807,6 +808,23 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [closeFind, findOpen, handleSave, newFile, openFileDialog, openFind, requestClose, saveAs])
 
+  // —— 多窗口：把某个文档单独开到一个新窗口（已在别处打开时主进程会聚焦那个窗口） ——
+  const openInNewWindow = useCallback(async (path: string) => {
+    try {
+      await windowApi.openWithPath(path)
+    } catch (e) {
+      message.error(`打开新窗口失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [])
+
+  // 上报本窗口打开的文件集合：主进程靠它拦住「同一文件开在两个窗口」——
+  // 两边都在整文件覆盖写，会静默丢编辑
+  useEffect(() => {
+    windowApi.reportOpenFiles(tabs.map((t) => t.path)).catch(() => {
+      // 上报失败只影响双开守卫，不打断编辑
+    })
+  }, [tabs])
+
   const handleTabChange = useCallback(
     async (path: string) => {
       const content = useWorkspaceStore.getState().contents[path]
@@ -932,6 +950,7 @@ export default function App() {
                 activePath={activePath}
                 onChange={handleTabChange}
                 onClose={requestClose}
+                onOpenInNewWindow={(path) => void openInNewWindow(path)}
               />
             </div>
             <Button

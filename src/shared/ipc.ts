@@ -35,5 +35,8 @@ export const IPC = {
   themesGetCss: 'themes:get-css',
   themesImport: 'themes:import',
   themesExport: 'themes:export',
-  themesReveal: 'themes:reveal'
+  themesReveal: 'themes:reveal',
+  // window 模块（多窗口）
+  windowOpenWithPath: 'window:open-with-path',
+  windowReportOpenFiles: 'window:report-open-files'
 } as const

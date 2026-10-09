@@ -4,8 +4,14 @@ import { IPC } from '@shared/ipc'
 import { openDatabase } from './db/database'
 import { migrate } from './db/migrate'
 import { registerIpc } from './ipc/register'
-import { extractOpenPath, setPendingOpenPath } from './modules/file/external'
+import {
+  extractOpenPath,
+  setInitialPathForWindow,
+  setPendingOpenPath
+} from './modules/file/external'
 import { handleMsFileProtocol, registerMsFileScheme } from './modules/file/protocol'
+import { documentWindowCount, registerDocumentWindow } from './modules/window/service'
+import { focusedOrFirstDocumentWindow } from './modules/window'
 
 // 应用显示名：中文「墨境」；英文名 InkSpace 用于打包（exe/安装器/productName）
 app.setName('墨境')
@@ -22,7 +28,11 @@ registerMsFileScheme()
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  function createWindow(): void {
+  /**
+   * 建一个文档窗口。给了 initialPath 就让该窗口启动后打开这个文件 ——
+   * 由 window/file 模块按 webContents.id 记着，渲染进程挂载时自己拉取（避免推送竞态）。
+   */
+  function createDocumentWindow(initialPath?: string): BrowserWindow {
     const win = new BrowserWindow({
       width: 1200,
       height: 800,
@@ -58,6 +68,10 @@ if (!app.requestSingleInstanceLock()) {
 
     // 开发态自动打开 DevTools，便于直接查看控制台
     if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' })
+
+    registerDocumentWindow(win)
+    if (initialPath) setInitialPathForWindow(win.webContents.id, initialPath)
+    return win
   }
 
   // 已运行实例收到第二个实例（再次右键「打开方式」）时，打开其中的文件
@@ -65,7 +79,8 @@ if (!app.requestSingleInstanceLock()) {
     const path = extractOpenPath(argv)
     if (!path) return
     setPendingOpenPath(path)
-    const win = BrowserWindow.getAllWindows()[0]
+    // 交给当前聚焦的文档窗口（不要用 getAllWindows()[0]：那里混着 mermaid/导出的隐藏窗口）
+    const win = focusedOrFirstDocumentWindow()
     if (win) {
       if (win.isMinimized()) win.restore()
       win.focus()
@@ -77,7 +92,7 @@ if (!app.requestSingleInstanceLock()) {
     // 组合根（composition root）：这里才接触 Electron，把 db 注入到下层
     const db = openDatabase(join(app.getPath('userData'), 'app.db'))
     migrate(db)
-    registerIpc(db)
+    registerIpc(db, { openDocumentWindow: (path) => void createDocumentWindow(path) })
 
     // 文档里的相对图片路径由 ms-file 协议提供
     handleMsFileProtocol()
@@ -85,10 +100,10 @@ if (!app.requestSingleInstanceLock()) {
     // 启动参数里若带了 md 文件（右键「打开方式」首启），记录待打开路径，渲染进程启动后拉取
     setPendingOpenPath(extractOpenPath(process.argv))
 
-    createWindow()
+    createDocumentWindow()
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      if (documentWindowCount() === 0) createDocumentWindow()
     })
   })
 
