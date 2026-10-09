@@ -10,8 +10,12 @@ import {
   setPendingOpenPath
 } from './modules/file/external'
 import { handleMsFileProtocol, registerMsFileScheme } from './modules/file/protocol'
-import { documentWindowCount, registerDocumentWindow } from './modules/window/service'
-import { focusedOrFirstDocumentWindow } from './modules/window'
+import {
+  documentWindowCount,
+  markEditorOnly,
+  registerDocumentWindow
+} from './modules/window/service'
+import { focusedOrFirstDocumentWindow, type DocumentWindowOptions } from './modules/window'
 
 // 应用显示名：中文「墨境」；英文名 InkSpace 用于打包（exe/安装器/productName）
 app.setName('墨境')
@@ -29,10 +33,10 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   /**
-   * 建一个文档窗口。给了 initialPath 就让该窗口启动后打开这个文件 ——
-   * 由 window/file 模块按 webContents.id 记着，渲染进程挂载时自己拉取（避免推送竞态）。
+   * 建一个文档窗口。initialPath 让它启动后打开该文件；editorOnly 表示只渲染编辑器（分离窗口）。
+   * 两者都按 webContents.id 记着，渲染进程挂载时自己拉取 —— 推送会跟挂载抢时间。
    */
-  function createDocumentWindow(initialPath?: string): BrowserWindow {
+  function createDocumentWindow(opts: DocumentWindowOptions = {}): BrowserWindow {
     const win = new BrowserWindow({
       width: 1200,
       height: 800,
@@ -70,7 +74,8 @@ if (!app.requestSingleInstanceLock()) {
     if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' })
 
     registerDocumentWindow(win)
-    if (initialPath) setInitialPathForWindow(win.webContents.id, initialPath)
+    if (opts.initialPath) setInitialPathForWindow(win.webContents.id, opts.initialPath)
+    if (opts.editorOnly) markEditorOnly(win.webContents.id)
     return win
   }
 
@@ -92,7 +97,7 @@ if (!app.requestSingleInstanceLock()) {
     // 组合根（composition root）：这里才接触 Electron，把 db 注入到下层
     const db = openDatabase(join(app.getPath('userData'), 'app.db'))
     migrate(db)
-    registerIpc(db, { openDocumentWindow: (path) => void createDocumentWindow(path) })
+    registerIpc(db, { openDocumentWindow: (opts) => void createDocumentWindow(opts) })
 
     // 文档里的相对图片路径由 ms-file 协议提供
     handleMsFileProtocol()

@@ -122,6 +122,8 @@ export default function App() {
   )
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // 分离出去的窗口只渲染编辑器（无左侧文件区）；启动时从主进程拉取
+  const [editorOnly, setEditorOnly] = useState(false)
   // —— 查找 / 替换 ——
   const [findOpen, setFindOpen] = useState(false)
   const [findReplaceOpen, setFindReplaceOpen] = useState(false)
@@ -364,13 +366,25 @@ export default function App() {
   }, [])
 
   const openFile = useCallback(
-    async (path: string) => {
+    async (path: string, opts?: { skipClaim?: boolean }) => {
       const st = useWorkspaceStore.getState()
       if (st.tabs.some((t) => t.path === path)) {
         const content = st.contents[path]
         activate(path)
         if (content != null) await showFile(path, content)
         return
+      }
+      // 「一个文件只能在一个窗口打开」：已在别的窗口就把那个窗口拿到前面，本窗口不再开第二份。
+      // skipClaim 给分离窗口的初始文件用 —— 那正是刚从别处移出来的那一份。
+      if (!opts?.skipClaim) {
+        try {
+          if ((await windowApi.claimFile(path)).claimedElsewhere) {
+            message.info('该文件已在另一个窗口打开，已切到那个窗口')
+            return
+          }
+        } catch {
+          // 询问失败就照常打开，不阻塞
+        }
       }
       try {
         const content = await fileApi.read(path)
@@ -400,9 +414,18 @@ export default function App() {
     fileApi.onOpenExternal((path) => {
       void openFile(path)
     })
-    void fileApi.pendingOpen().then((path) => {
-      if (path) void openFile(path)
-    })
+    // 启动配置：分离窗口的初始文件 + 是否只显示编辑器（无左侧文件区）。
+    // 用拉取而不是推送 —— 推送会跟这里的挂载抢时间。
+    void windowApi
+      .bootstrap()
+      .then(async (boot) => {
+        setEditorOnly(boot.editorOnly)
+        // 初始文件不参与「一个文件只在一个窗口」的询问：它正是刚从别处移过来的那一份
+        if (boot.initialPath) await openFile(boot.initialPath, { skipClaim: true })
+      })
+      .catch(() => {
+        // 拿不到启动配置不影响使用
+      })
   }, [openFile])
 
   // —— 粘贴 / 拖入的图片：存到文档旁的 assets/（或统一目录），再在光标处插入引用 ——
@@ -720,6 +743,27 @@ export default function App() {
     [finalizeClose]
   )
 
+  // —— 多窗口：把当前 tab **移**到新窗口（是移动，不是复制：本窗口的 tab 随后关掉） ——
+  const moveToNewWindow = useCallback(
+    async (path: string) => {
+      try {
+        // 先把待落盘的编辑 flush 下去：新窗口是从磁盘读的，不 flush 会读到旧内容，
+        // 而本窗口的 tab 马上要关（内存里的编辑就再也回不来了）
+        if (pendingPathRef.current === path) {
+          saveRef.current.cancel()
+          pendingPathRef.current = null
+          await doSave(path, useWorkspaceStore.getState().contents[path] ?? '')
+        }
+        const res = await windowApi.moveToNewWindow(path)
+        // 没移成（该文件已在别的窗口）就保留本窗口的 tab，别把文档关没了
+        if (res.moved) await finalizeClose(path, false)
+      } catch (e) {
+        message.error(`移到新窗口失败：${e instanceof Error ? e.message : String(e)}`)
+      }
+    },
+    [doSave, finalizeClose]
+  )
+
   // —— 查找 / 替换：界面状态在这里，具体行为交给编辑器适配器 ——
   const closeFind = useCallback(() => {
     setFindOpen(false)
@@ -808,20 +852,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [closeFind, findOpen, handleSave, newFile, openFileDialog, openFind, requestClose, saveAs])
 
-  // —— 多窗口：把某个文档单独开到一个新窗口（已在别处打开时主进程会聚焦那个窗口） ——
-  const openInNewWindow = useCallback(async (path: string) => {
-    try {
-      await windowApi.openWithPath(path)
-    } catch (e) {
-      message.error(`打开新窗口失败：${e instanceof Error ? e.message : String(e)}`)
-    }
-  }, [])
-
-  // 上报本窗口打开的文件集合：主进程靠它拦住「同一文件开在两个窗口」——
-  // 两边都在整文件覆盖写，会静默丢编辑
+  // 上报本窗口打开的文件集合：主进程靠它维护「一个文件只能在一个窗口打开」
   useEffect(() => {
     windowApi.reportOpenFiles(tabs.map((t) => t.path)).catch(() => {
-      // 上报失败只影响双开守卫，不打断编辑
+      // 上报失败只影响守卫，不打断编辑
     })
   }, [tabs])
 
@@ -901,29 +935,32 @@ export default function App() {
       }}
     >
       <Layout style={{ height: '100vh' }}>
-        <Layout.Sider width={SIDEBAR_WIDTH} theme="light" className="ms-sider">
-          <Sidebar
-            workspacePath={workspacePath}
-            tree={tree}
-            recent={recent}
-            activePath={activePath}
-            outline={outline}
-            tab={sidebarTab}
-            onTabChange={setSidebarTab}
-            onOpenWorkspace={openWorkspace}
-            onOpenFileDialog={openFileDialog}
-            onOpenFile={openFile}
-            onNewFile={newFile}
-            onRename={requestRename}
-            onDelete={confirmDelete}
-            onReveal={(path) => fileApi.reveal(path).catch((e) => message.error(String(e)))}
-            onClearRecent={clearRecent}
-            onJumpOutline={(i) => editorRef.current?.scrollToHeading(i)}
-            onOpenSearchResult={(path, query, caseSensitive, occurrence) => {
-              void openSearchResult(path, query, caseSensitive, occurrence)
-            }}
-          />
-        </Layout.Sider>
+        {/* 分离出去的窗口只渲染编辑器 —— 不挂左侧文件区 */}
+        {!editorOnly && (
+          <Layout.Sider width={SIDEBAR_WIDTH} theme="light" className="ms-sider">
+            <Sidebar
+              workspacePath={workspacePath}
+              tree={tree}
+              recent={recent}
+              activePath={activePath}
+              outline={outline}
+              tab={sidebarTab}
+              onTabChange={setSidebarTab}
+              onOpenWorkspace={openWorkspace}
+              onOpenFileDialog={openFileDialog}
+              onOpenFile={openFile}
+              onNewFile={newFile}
+              onRename={requestRename}
+              onDelete={confirmDelete}
+              onReveal={(path) => fileApi.reveal(path).catch((e) => message.error(String(e)))}
+              onClearRecent={clearRecent}
+              onJumpOutline={(i) => editorRef.current?.scrollToHeading(i)}
+              onOpenSearchResult={(path, query, caseSensitive, occurrence) => {
+                void openSearchResult(path, query, caseSensitive, occurrence)
+              }}
+            />
+          </Layout.Sider>
+        )}
 
         <Layout>
           <Layout.Header
@@ -950,7 +987,8 @@ export default function App() {
                 activePath={activePath}
                 onChange={handleTabChange}
                 onClose={requestClose}
-                onOpenInNewWindow={(path) => void openInNewWindow(path)}
+                canOpenInNewWindow={!editorOnly}
+                onOpenInNewWindow={(path) => void moveToNewWindow(path)}
               />
             </div>
             <Button

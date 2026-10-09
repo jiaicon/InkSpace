@@ -20,8 +20,7 @@ export const IPC = {
   fileReveal: 'file:reveal',
   filePick: 'file:pick',
   fileSaveImage: 'file:save-image',
-  // 外部打开（右键 md「打开方式」）
-  filePendingOpen: 'file:pending-open',
+  // 外部打开（右键 md「打开方式」）—— 运行中由主进程**推送**给窗口
   fileOpenExternal: 'file:open-external',
   // export 模块
   exportHtml: 'export:html',
@@ -37,6 +36,11 @@ export const IPC = {
   themesExport: 'themes:export',
   themesReveal: 'themes:reveal',
   // window 模块（多窗口）
-  windowOpenWithPath: 'window:open-with-path',
+  /** 窗口启动时拉取自己的启动配置：初始文件 + 是不是「只有编辑器」的窗口 */
+  windowBootstrap: 'window:bootstrap',
+  /** 把某个文档从本窗口移到一个新窗口（是**移动**，本窗口的 tab 会被关掉） */
+  windowMoveToNewWindow: 'window:move-to-new-window',
+  /** 打开前问一句「该文件是否已开在别的窗口」——「一个文件只在一个窗口打开」的守卫 */
+  windowClaimFile: 'window:claim-file',
   windowReportOpenFiles: 'window:report-open-files'
 } as const

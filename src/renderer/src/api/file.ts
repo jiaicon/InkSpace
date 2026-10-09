@@ -12,7 +12,6 @@ export const fileApi = {
   pick: () => unwrap<string | null>(window.api.file.pick()),
   saveImage: (docPath: string, data: Uint8Array, ext: string) =>
     unwrap<string>(window.api.file.saveImage(docPath, data, ext)),
-  pendingOpen: () => unwrap<string | null>(window.api.file.pendingOpen()),
   onOpenExternal: (cb: (path: string) => void) => window.api.file.onOpenExternal(cb),
   getPathForFile: (file: File) => {
     // 主方案：preload 的 webUtils.getPathForFile（Electron 官方 API）

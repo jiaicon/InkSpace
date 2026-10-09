@@ -4,6 +4,8 @@ import {
   documentWindowCount,
   documentWindows,
   findOtherWindowShowing,
+  isEditorOnly,
+  markEditorOnly,
   registerDocumentWindow,
   reportOpenFiles
 } from '../src/main/modules/window/service'
@@ -98,4 +100,18 @@ describe('findOtherWindowShowing（双开守卫的依据）', () => {
       a.close()
     }
   )
+})
+
+describe('editor-only 标记（分离窗口）', () => {
+  it('默认不是；标记后是；窗口关闭后清掉', () => {
+    const a = fakeWindow(701)
+    registerDocumentWindow(a.win)
+    expect(isEditorOnly(701)).toBe(false)
+
+    markEditorOnly(701)
+    expect(isEditorOnly(701)).toBe(true)
+
+    a.close()
+    expect(isEditorOnly(701)).toBe(false)
+  })
 })

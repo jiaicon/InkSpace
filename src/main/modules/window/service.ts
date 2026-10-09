@@ -13,6 +13,9 @@ const registry = new Map<number, BrowserWindow>()
 /** 每个窗口当前打开的文件集合（渲染进程上报）—— 「同一文件别开两个窗口」守卫的依据 */
 const openFiles = new Map<number, Set<string>>()
 
+/** 「只有编辑器、没有左侧文件区」的窗口（分离出去的窗口） */
+const editorOnlyIds = new Set<number>()
+
 /** Windows 下路径大小写不敏感，比较前统一 */
 function normalize(path: string): string {
   return process.platform === 'win32' ? path.toLowerCase() : path
@@ -24,8 +27,18 @@ export function registerDocumentWindow(win: BrowserWindow): void {
   win.on('closed', () => {
     registry.delete(id)
     openFiles.delete(id)
+    editorOnlyIds.delete(id)
     forgetWindow(id)
   })
+}
+
+/** 标记该窗口为「只有编辑器」（分离窗口）；渲染进程启动时拉取并据此少渲染左侧栏 */
+export function markEditorOnly(webContentsId: number): void {
+  editorOnlyIds.add(webContentsId)
+}
+
+export function isEditorOnly(webContentsId: number): boolean {
+  return editorOnlyIds.has(webContentsId)
 }
 
 export function documentWindowCount(): number {

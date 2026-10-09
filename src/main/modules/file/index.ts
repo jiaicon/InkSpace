@@ -2,9 +2,8 @@ import { dialog, shell } from 'electron'
 import { randomBytes } from 'node:crypto'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc'
-import { handle, handleWithSender } from '../../ipc/util'
+import { handle } from '../../ipc/util'
 import { createFileService } from './service'
-import { takePendingOpenPath } from './external'
 import { formatStamp, isAllowedImageExt, planImagePlacement } from './assets'
 import type { SettingsService } from '../settings/service'
 
@@ -66,7 +65,4 @@ export function registerFileIpc(settings: SettingsService): void {
   })
 
   handle(IPC.fileReveal, (path) => shell.showItemInFolder(path as string))
-
-  // 外部打开：返回**本窗口**要打开的 md 路径（新建窗口的初始文件，或首启时的全局待打开）
-  handleWithSender(IPC.filePendingOpen, (senderId) => takePendingOpenPath(senderId))
 }

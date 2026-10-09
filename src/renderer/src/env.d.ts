@@ -41,7 +41,6 @@ declare global {
         reveal: (path: string) => Promise<IpcResult<void>>
         pick: () => Promise<IpcResult<string | null>>
         saveImage: (docPath: string, data: Uint8Array, ext: string) => Promise<IpcResult<string>>
-        pendingOpen: () => Promise<IpcResult<string | null>>
         onOpenExternal: (cb: (path: string) => void) => void
         getPathForFile: (file: File) => string
       }
@@ -62,9 +61,15 @@ declare global {
         reveal: () => Promise<IpcResult<void>>
       }
       window: {
-        /** 把该文件单独开到一个新窗口；已在别的窗口打开时主进程会聚焦那个窗口 */
-        openWithPath: (path: string) => Promise<IpcResult<{ focusedExisting: boolean }>>
-        /** 上报本窗口当前打开的文件，供主进程做「同一文件不开两个窗口」的守卫 */
+        /** 窗口启动配置：初始文件 + 是否「只有编辑器」的窗口 */
+        bootstrap: () => Promise<IpcResult<{ initialPath: string | null; editorOnly: boolean }>>
+        /** 把该文档**移**到新窗口；本窗口的 tab 由调用方负责关掉 */
+        moveToNewWindow: (
+          path: string
+        ) => Promise<IpcResult<{ moved: boolean; focusedExisting: boolean }>>
+        /** 打开前询问该文件是否已开在别的窗口（是则那个窗口被拿到前面） */
+        claimFile: (path: string) => Promise<IpcResult<{ claimedElsewhere: boolean }>>
+        /** 上报本窗口当前打开的文件 */
         reportOpenFiles: (paths: string[]) => Promise<IpcResult<void>>
       }
     }

@@ -20,7 +20,6 @@ export const fileApi = {
   pick: () => ipcRenderer.invoke(IPC.filePick),
   saveImage: (docPath: string, data: Uint8Array, ext: string) =>
     ipcRenderer.invoke(IPC.fileSaveImage, docPath, data, ext),
-  pendingOpen: () => ipcRenderer.invoke(IPC.filePendingOpen),
   onOpenExternal: (cb: (path: string) => void) => {
     openExternalHandler = cb
   },

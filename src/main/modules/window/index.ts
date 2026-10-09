@@ -1,11 +1,19 @@
 import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc'
 import { handleWithSender } from '../../ipc/util'
-import { documentWindows, findOtherWindowShowing, reportOpenFiles } from './service'
+import { takePendingOpenPath } from '../file/external'
+import { documentWindows, findOtherWindowShowing, isEditorOnly, reportOpenFiles } from './service'
+
+export interface DocumentWindowOptions {
+  /** 启动后要打开的文件 */
+  initialPath?: string
+  /** 只渲染编辑器（无左侧文件区）—— 分离出去的窗口用 */
+  editorOnly?: boolean
+}
 
 export interface WindowIpcDeps {
-  /** 新建一个文档窗口并让它打开该文件（由 main/index.ts 提供，窗口生命周期归它管） */
-  openDocumentWindow(path: string): void
+  /** 新建一个文档窗口（窗口生命周期归 main/index.ts，所以由它注入） */
+  openDocumentWindow(opts: DocumentWindowOptions): void
 }
 
 /**
@@ -19,20 +27,41 @@ export function focusedOrFirstDocumentWindow(): BrowserWindow | null {
   return windows[0] ?? null
 }
 
-/** 注册 window 模块的 IPC handler（多窗口：在新窗口打开、上报已打开文件） */
+function bringToFront(win: BrowserWindow): void {
+  if (win.isMinimized()) win.restore()
+  win.focus()
+}
+
+/** 注册 window 模块的 IPC handler（多窗口） */
 export function registerWindowIpc(deps: WindowIpcDeps): void {
-  handleWithSender(IPC.windowOpenWithPath, (senderId, path) => {
+  // 窗口启动时**拉取**自己的配置。用拉取而不是推送：推送会跟渲染进程挂载抢时间
+  //（监听器还没注册就发出去了，文件打不开）。
+  handleWithSender(IPC.windowBootstrap, (senderId) => ({
+    initialPath: takePendingOpenPath(senderId),
+    editorOnly: isEditorOnly(senderId)
+  }))
+
+  // 把文档**移**到新窗口。本窗口的 tab 由渲染进程负责关掉 ——
+  // 它会先把未落盘的编辑 flush 下去，再发这条请求，否则新窗口会从磁盘读到旧内容。
+  handleWithSender(IPC.windowMoveToNewWindow, (senderId, path) => {
     const target = String(path)
-    // 双开守卫：该文件已在**别的**文档窗口里打开，就聚焦那个窗口而不是开第二个 ——
-    // 两个窗口各自全量回写同一文件会互相覆盖、静默丢数据（详见 docs/TODO.md）
     const existing = findOtherWindowShowing(target, senderId)
     if (existing) {
-      if (existing.isMinimized()) existing.restore()
-      existing.focus()
-      return { focusedExisting: true }
+      bringToFront(existing)
+      return { moved: false, focusedExisting: true }
     }
-    deps.openDocumentWindow(target)
-    return { focusedExisting: false }
+    deps.openDocumentWindow({ initialPath: target, editorOnly: true })
+    return { moved: true, focusedExisting: false }
+  })
+
+  // 「一个文件只在一个窗口打开」：打开前先问一句，已在别处就把那个窗口拿到前面、本窗口不再开 tab
+  handleWithSender(IPC.windowClaimFile, (senderId, path) => {
+    const existing = findOtherWindowShowing(String(path), senderId)
+    if (existing) {
+      bringToFront(existing)
+      return { claimedElsewhere: true }
+    }
+    return { claimedElsewhere: false }
   })
 
   handleWithSender(IPC.windowReportOpenFiles, (senderId, paths) => {
