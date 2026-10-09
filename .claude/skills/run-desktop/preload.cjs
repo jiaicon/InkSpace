@@ -15,8 +15,10 @@ const ok = (data) => Promise.resolve({ ok: true, data })
 const fail = (error) => Promise.resolve({ ok: false, error })
 const writes = []
 // 多窗口相关的桩：记下调用，便于驱动脚本断言「点了菜单是否真的带着路径调过去」
-const windowCalls = []
+const windowCalls = [] // moveToNewWindow
+const claimCalls = [] // claimFile
 let reportedFiles = []
+let bootstrapCalls = 0
 
 function readDoc() {
   try {
@@ -94,9 +96,22 @@ contextBridge.exposeInMainWorld('api', {
     reveal: () => ok(undefined)
   },
   window: {
-    openWithPath: (path) => {
+    // 模拟分离窗口的启动配置：VERIFY_BOOTSTRAP_PATH 给了就当「该窗口的初始文件」，
+    // VERIFY_EDITOR_ONLY=1 就当「只有编辑器」的窗口（用来验无左侧栏的布局）
+    bootstrap: () => {
+      bootstrapCalls++
+      return ok({
+        initialPath: process.env.VERIFY_BOOTSTRAP_PATH || null,
+        editorOnly: process.env.VERIFY_EDITOR_ONLY === '1'
+      })
+    },
+    moveToNewWindow: (path) => {
       windowCalls.push({ path })
-      return ok({ focusedExisting: false })
+      return ok({ moved: true, focusedExisting: false })
+    },
+    claimFile: (path) => {
+      claimCalls.push({ path })
+      return ok({ claimedElsewhere: false })
     },
     reportOpenFiles: (paths) => {
       reportedFiles = paths
@@ -109,5 +124,7 @@ contextBridge.exposeInMainWorld('api', {
 contextBridge.exposeInMainWorld('__verify', {
   writes: () => writes,
   windowCalls: () => windowCalls,
-  reportedFiles: () => reportedFiles
+  claimCalls: () => claimCalls,
+  reportedFiles: () => reportedFiles,
+  bootstrapCalls: () => bootstrapCalls
 })

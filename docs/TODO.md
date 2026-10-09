@@ -42,30 +42,40 @@ Welcome 页 / 最近打开 / 外部「打开方式」都走它），且每个窗
   与导出 PDF 的 `show:false` 窗口（`export/service.ts:52`）都在里面。
   → 需要一个明确的"文档窗口"注册表（或给窗口打标记），别再用 `getAllWindows()` 猜。
 
-### 阶段 1 —— **主体已实现（2026-10-09）**
+### 阶段 1 —— **已实现（2026-10-09）**
+
+语义是**移动**，不是复制：把某个 tab 移到新窗口后它从原窗口消失；新窗口**只有编辑器**（无左侧文件区）。
+「一个文件只能在一个窗口打开」是硬不变量。
 
 已完成：
 
-- [x] `src/main/index.ts`：`createWindow` → `createDocumentWindow(initialPath?)`，可复用、可带初始文件
-- [x] 新增 `src/main/modules/window/`：**文档窗口注册表** + 双开守卫 + IPC。
+- [x] `main/index.ts`：`createWindow` → `createDocumentWindow({ initialPath?, editorOnly? })`，可复用
+- [x] 新增 `src/main/modules/window/`：**文档窗口注册表** + 守卫 + IPC。
       顺带修掉两处 `BrowserWindow.getAllWindows()` 的用法 —— 那里面混着 mermaid 的复用隐藏窗口
       与导出 PDF 的 `show:false` 窗口，多窗口下拿 `[0]` 猜主界面必然出错
-- [x] 通道 `window:openWithPath` / `window:reportOpenFiles`（`src/shared/ipc.ts`）；
-      `ipc/util.ts` 增加 `handleWithSender`（handler 需要知道"哪个窗口在请求"）
-- [x] 初始文件**按窗口路由**：`file/external.ts` 由全局单槽改为 per-window + 全局回落
-- [x] preload（`apis/window.ts`）/ `env.d.ts` / 渲染侧封装 `api/window.ts`
-- [x] `TabBar.tsx` tab 右键菜单「在新窗口打开」；`App.tsx` 接线 + 上报本窗口已打开的文件
-- [x] 单测 `tests/window-service.test.ts`（注册表 / 守卫 / 关闭清理 / Windows 路径大小写不敏感）
+- [x] 通道：`window:bootstrap`（窗口启动时拉自己的配置）/ `window:move-to-new-window` /
+      `window:claim-file` / `window:report-open-files`；`ipc/util.ts` 增加 `handleWithSender`
+- [x] **「一个文件只在一个窗口」**：打开前先 `claimFile` 问一句，已在别处就把那个窗口拿到前面、
+      本窗口不再开第二份（分离窗口的初始文件除外 —— 它正是刚从别处移过来的那份）
+- [x] 启动配置**按窗口路由**（`file/external.ts` 由全局单槽改为 per-window + 全局回落）；
+      原来的 `file:pending-open` 被 `window:bootstrap` 取代（只留一个「我怎么启动」入口）
+- [x] 分离窗口：`editorOnly` → `App.tsx` 不渲染左侧栏；其 tab 右键也不再给「在新窗口打开」
+- [x] `TabBar.tsx` 右键菜单；`App.tsx` 的移动流程 = **先 flush 未落盘的编辑 → 请求 → 关掉本窗口 tab**。
+      顺序不能反：新窗口从磁盘读，不 flush 就会读到旧内容，而本窗口的 tab 马上要关
+- [x] 单测 `tests/window-service.test.ts`（注册表 / 守卫 / 关闭清理 / Windows 大小写 / editor-only 标记）
+- [x] 渲染侧实测（run-desktop 驱动）：分离窗口确实无 `.ms-sider`、初始文件自动打开；移动后源窗口
+      `reportedFiles()` 归零、文档 tab 消失；打开前确实调了 `claimFile`
 
 仍未做：
 
-- [ ] **广播层**：设置变更 / 文件树变更推到所有文档窗口（`modules/settings`、`modules/file` 写入后触发）。
-      现在开两个窗口时，一个改主题或新建文件，另一个不会跟着变
+- [ ] **关闭分离窗口后，文件既不在这里也不在原窗口**（就是不在任何窗口打开了）—— 见下方设计问题
+- [ ] **广播层**：设置变更 / 文件树变更推到所有文档窗口。现在开两个窗口时，一个改主题或新建文件，
+      另一个不会跟着变
 - [ ] 快捷键（可选），例如 `Ctrl+Shift+N`
-- [ ] **端到端仍未验证**：`run-desktop` 驱动用**桩** `window.api` 直接加载 `out/renderer`，
-      从不加载真实主进程 —— 「点菜单 → 主进程真的开窗」这条链路它验不了，单测只覆盖了注册表/守卫逻辑。
+- [ ] **主进程链路仍未端到端验证**：`run-desktop` 驱动用**桩** `window.api` 直接加载 `out/renderer`，
+      从不加载真实主进程 —— 「点菜单 → 主进程真的开出一个窗口」它验不了（桩直接返回 `moved: true`）。
       要自动化验证得另做一条能驱动**真实应用**的通道：带 `--remote-debugging-port` 启动真实应用，
-      再用 CDP 连它的渲染进程。（这也是 run-desktop 目前的固有盲区：凡属主进程的能力都够不着。）
+      再用 CDP 连它的渲染进程。（这是 run-desktop 的固有盲区：凡属主进程的能力都够不着。）
 
 ### 阶段 2（贵）—— 拖拽分离 / 拖回合并
 
@@ -79,7 +89,9 @@ Welcome 页 / 最近打开 / 外部「打开方式」都走它），且每个窗
 - ~~同一文件允不允许双开？~~ **已定：不允许** —— 已实现「已在别的窗口打开则聚焦那个窗口」的守卫。
   理由：写入是整文件覆盖、无冲突检测，双开必然静默丢编辑。将来若要放开，必须同时做 mtime 冲突检测。
 - 设置/文件树的跨窗口同步是"实时推送"还是"切窗口时重读"？（**未决**，广播层还没做）
-- 新窗口关掉后，它的 tab 是回到源窗口，还是就地消失？（VSCode 是前者，但需要记住来源；阶段 2 再定）
+- **新窗口关掉后，它的 tab 回不回到源窗口？** 当前实现：不回 —— 文件就只是不再在任何窗口打开。
+  VSCode 会记住来源并送回原窗口；要做就得记录「这份文档是从哪个窗口移出来的」，且要在
+  「用户主动关窗」与「窗口崩溃」之间区分。
 - 窗口要不要记住各自的 tab 集合（重启后恢复多窗口）？—— 这会把 SQLite 也牵进来
 
 ---
