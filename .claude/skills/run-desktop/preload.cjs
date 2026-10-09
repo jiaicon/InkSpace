@@ -14,6 +14,9 @@ const settingsFile = path.join(__dirname, '.settings.json')
 const ok = (data) => Promise.resolve({ ok: true, data })
 const fail = (error) => Promise.resolve({ ok: false, error })
 const writes = []
+// 多窗口相关的桩：记下调用，便于驱动脚本断言「点了菜单是否真的带着路径调过去」
+const windowCalls = []
+let reportedFiles = []
 
 function readDoc() {
   try {
@@ -89,8 +92,22 @@ contextBridge.exposeInMainWorld('api', {
     import: () => ok(null),
     export: () => ok(null),
     reveal: () => ok(undefined)
+  },
+  window: {
+    openWithPath: (path) => {
+      windowCalls.push({ path })
+      return ok({ focusedExisting: false })
+    },
+    reportOpenFiles: (paths) => {
+      reportedFiles = paths
+      return ok(undefined)
+    }
   }
 })
 
 // 应用每次保存都会写 markdown，驱动脚本用 `markdown` 命令读它 —— 这是最强的断言信号
-contextBridge.exposeInMainWorld('__verify', { writes: () => writes })
+contextBridge.exposeInMainWorld('__verify', {
+  writes: () => writes,
+  windowCalls: () => windowCalls,
+  reportedFiles: () => reportedFiles
+})
