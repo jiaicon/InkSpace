@@ -96,3 +96,7 @@ quit
   这行是唯一线索。
 - `open` 之前 `.ProseMirror` 不存在；`focus` 在没打开文档时会静默失败。
 - 自动保存是 500ms 防抖，用 `markdown` 命令而不是 `eval:window.__verify.writes()` 手动读。
+- **只覆盖渲染进程**：驱动是用**桩** `window.api` 直接加载 `out/renderer` 的，**从不加载真实主进程** ——
+  所以 IPC handler、窗口创建、真实文件读写、原生对话框这些主进程能力它一概验不了
+  （它的 `file.*` 全是桩）。要验那些得另想办法，例如带 `--remote-debugging-port` 启动**真实应用**
+  再用 CDP 连它的渲染进程。别拿它去验主进程逻辑，会得到假的"通过"。

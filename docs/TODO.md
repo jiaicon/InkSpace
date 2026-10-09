@@ -42,17 +42,30 @@ Welcome 页 / 最近打开 / 外部「打开方式」都走它），且每个窗
   与导出 PDF 的 `show:false` 窗口（`export/service.ts:52`）都在里面。
   → 需要一个明确的"文档窗口"注册表（或给窗口打标记），别再用 `getAllWindows()` 猜。
 
-### 阶段 1（成本小、价值高）—— 建议先做这个
+### 阶段 1 —— **主体已实现（2026-10-09）**
 
-- [ ] `src/main/index.ts`：把 `createWindow()` 抽出为可复用函数，接受"初始打开的文件路径"；建立文档窗口注册表
-- [ ] `src/shared/ipc.ts` + `src/main/ipc/register.ts`：新增 `window:openWithPath(path)`（在主进程建新窗口）
-- [ ] `src/preload/index.ts` + `src/renderer/src/env.d.ts`：暴露该通道
-- [ ] `src/renderer/src/components/TabBar.tsx`：tab 右键菜单加「在新窗口打开」（复用现有 Dropdown 用法）
-- [ ] 新窗口启动时用初始路径调 `openFile(path)`（复用 `pendingOpen` 的拉取模式，但要按窗口隔离）
-- [ ] **双开守卫**：主进程记录"哪些文件正开在哪个窗口"，已在别处打开时聚焦那个窗口而不是开第二个
-- [ ] **广播层**：设置变更 / 文件树变更推到所有文档窗口（`src/main/modules/settings` 与 `file` 写入后触发）
-- [ ] 快捷键（可选）：`Ctrl+Shift+N` 之类
-- [ ] 验证：用 `.claude/skills/run-desktop` 驱动 —— 开两个窗口、两边改设置看是否同步、双开守卫是否聚焦已有窗口
+已完成：
+
+- [x] `src/main/index.ts`：`createWindow` → `createDocumentWindow(initialPath?)`，可复用、可带初始文件
+- [x] 新增 `src/main/modules/window/`：**文档窗口注册表** + 双开守卫 + IPC。
+      顺带修掉两处 `BrowserWindow.getAllWindows()` 的用法 —— 那里面混着 mermaid 的复用隐藏窗口
+      与导出 PDF 的 `show:false` 窗口，多窗口下拿 `[0]` 猜主界面必然出错
+- [x] 通道 `window:openWithPath` / `window:reportOpenFiles`（`src/shared/ipc.ts`）；
+      `ipc/util.ts` 增加 `handleWithSender`（handler 需要知道"哪个窗口在请求"）
+- [x] 初始文件**按窗口路由**：`file/external.ts` 由全局单槽改为 per-window + 全局回落
+- [x] preload（`apis/window.ts`）/ `env.d.ts` / 渲染侧封装 `api/window.ts`
+- [x] `TabBar.tsx` tab 右键菜单「在新窗口打开」；`App.tsx` 接线 + 上报本窗口已打开的文件
+- [x] 单测 `tests/window-service.test.ts`（注册表 / 守卫 / 关闭清理 / Windows 路径大小写不敏感）
+
+仍未做：
+
+- [ ] **广播层**：设置变更 / 文件树变更推到所有文档窗口（`modules/settings`、`modules/file` 写入后触发）。
+      现在开两个窗口时，一个改主题或新建文件，另一个不会跟着变
+- [ ] 快捷键（可选），例如 `Ctrl+Shift+N`
+- [ ] **端到端仍未验证**：`run-desktop` 驱动用**桩** `window.api` 直接加载 `out/renderer`，
+      从不加载真实主进程 —— 「点菜单 → 主进程真的开窗」这条链路它验不了，单测只覆盖了注册表/守卫逻辑。
+      要自动化验证得另做一条能驱动**真实应用**的通道：带 `--remote-debugging-port` 启动真实应用，
+      再用 CDP 连它的渲染进程。（这也是 run-desktop 目前的固有盲区：凡属主进程的能力都够不着。）
 
 ### 阶段 2（贵）—— 拖拽分离 / 拖回合并
 
@@ -61,16 +74,33 @@ Welcome 页 / 最近打开 / 外部「打开方式」都走它），且每个窗
 - [ ] 拖拽过程中的视觉反馈（落点高亮、幽灵元素）
 - [ ] 边界：源窗口已关闭、同文件已在别处打开、拖到非文档窗口上
 
-### 动手前要先定的设计问题（brainstorm 时回答）
+### 设计问题
 
-- 同一文件**允不允许**双开？（决定要不要做冲突检测，是整个功能的成本分水岭）
-- 设置/文件树的跨窗口同步是"实时推送"还是"切窗口时重读"？
-- 新窗口关掉后，它的 tab 是回到源窗口，还是就地消失？（VSCode 是前者，但需要记住来源）
+- ~~同一文件允不允许双开？~~ **已定：不允许** —— 已实现「已在别的窗口打开则聚焦那个窗口」的守卫。
+  理由：写入是整文件覆盖、无冲突检测，双开必然静默丢编辑。将来若要放开，必须同时做 mtime 冲突检测。
+- 设置/文件树的跨窗口同步是"实时推送"还是"切窗口时重读"？（**未决**，广播层还没做）
+- 新窗口关掉后，它的 tab 是回到源窗口，还是就地消失？（VSCode 是前者，但需要记住来源；阶段 2 再定）
 - 窗口要不要记住各自的 tab 集合（重启后恢复多窗口）？—— 这会把 SQLite 也牵进来
 
 ---
 
-## 2. 其他已知未做项（各 spec 已登记，勿重复登记）
+## 2. tabs 拖拽排序
+
+**目标**：tab 按住可拖动、调换顺序。
+
+**成本：小，且不需要新依赖。** antd 的 Tabs 本身不支持拖拽排序，但 store 里 `tabs` 就是一个数组
+（`src/renderer/src/stores/workspace.ts`）：加一个 `reorderTabs(from, to)` action，再在
+`TabBar.tsx` 的 tab label 上挂 HTML5 `draggable` + `dragstart`/`dragover`/`drop` 即可
+（右键菜单已经包在 label 上，可以复用同一个元素）。
+
+- [ ] `stores/workspace.ts`：加 `reorderTabs(from: number, to: number)`（数组 move，`activePath` 不变）
+- [ ] `TabBar.tsx`：label 加 `draggable`；拖动时记源下标、`dragover` 给落点反馈、`drop` 调 action
+- [ ] 视觉反馈：拖动中的半透明、落点插入线（注意别和 antd 自带的 ink bar 打架）
+- [ ] 单测：`reorderTabs` 是纯数组操作，好测（边界：同位置、首尾互换、越界下标）
+- [ ] ⚠️ 与「拖出窗口分离」（§1 阶段 2）**共用同一套拖拽手势**，两者要一起设计，
+      否则手势会打架：拖到 tab 条内 = 排序，拖出窗口 = 分离
+
+## 3. 其他已知未做项（各 spec 已登记，勿重复登记）
 
 - **子项目 C：知识库**（spec 已写但状态仍是"草稿，待确认"，从未实现）
   `docs/superpowers/specs/2026-09-03-knowledge-base-design.md`
